@@ -21,7 +21,13 @@ model layer:attentions.py, modules.py, monotonic_align
 function: transforms.py, commons.py
 model: models.py
 api: for infer, for train
+
+
+
+
 1a.  side model: prosody_bert, ecapa
+
+
 2. pre
 api in: text, sound.
 api out: to model.
@@ -29,6 +35,17 @@ text process: vits_pinyin.py, text
 sound process: mel_processing.py
 embedding process:
 data_utils.py, vits_prepare.py
+
+flow:
+python pre_vits.py --dataset BZN --model vits
+if None user has to build dataset in stardard way
+1. from dataset to temp
+2. prepare in temp:text spec wave bert embedding
+3. into filelists
+
+
+
+
 3. train
 losses.py, utils.py, train.py
 4. infer
@@ -58,6 +75,9 @@ handle text
 vist & vitsm duration predictor same but different code.
 need to generate new default vitsm model
 now use temp_model
+
+vits_pinyin need to separate into pinyin and bert
+
 # temp
 outter example audio:
 /var/www/html/webuploader/audio_temp

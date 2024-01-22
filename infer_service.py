@@ -1,17 +1,16 @@
 import os
 import sys
 import numpy as np
-
 import torch
 import argparse
 import time
+from opencc import OpenCC
+from scipy.io import wavfile
 
 import utils
-from scipy.io import wavfile
 from text import symbols
 from text import cleaned_text_to_sequence
-from vits_pinyin import VITS_PinYin
-from opencc import OpenCC
+from text import VITS_PinYin
 from vits_core.models import SynthesizerEval
 from vits_core.models import SynthesizerEval_temp
 
@@ -29,6 +28,8 @@ class TTS_Vits():
         # self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         # pinyin
         self.tts_front = VITS_PinYin(lib_dir+"/models/prosody_bert_model", self.device)
+		# prosody_bert
+        self.prosody_bert = text_to_prosody()
         # config
         self.config = lib_dir+'/config/bert_vits.json'
         self.hps = utils.get_hparams_from_file(self.config)

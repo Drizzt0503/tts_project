@@ -1,7 +1,7 @@
 {
   "train": {
     "train_class": "SynthesizerTrn",
-    "eval_class": "SynthesizerEval",
+    "eval_class": "SynthesizerEval_temp",
     "log_interval": 10,
     "eval_interval": 20000,
     "seed": 1234,

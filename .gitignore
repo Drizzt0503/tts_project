@@ -1,2 +1,3 @@
 **/__pycache__/
-vits_core/monotonic_align/monotonic_align
+vits_core/monotonic_align/core.c
+vits_core/monotonic_align/build

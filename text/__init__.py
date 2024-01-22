@@ -1,4 +1,4 @@
-from text.symbols import symbols
+from text.phoneme_table import symbols
 
 
 # Mappings from symbol to numeric ID and vice versa:
@@ -24,425 +24,175 @@ def sequence_to_text(sequence):
         s = _id_to_symbol[symbol_id]
         result += s
     return result
+#=======================
 
 
-pinyin_dict = {
-    "a": ("^", "a"),
-    "ai": ("^", "ai"),
-    "an": ("^", "an"),
-    "ang": ("^", "ang"),
-    "ao": ("^", "ao"),
-    "ba": ("b", "a"),
-    "bai": ("b", "ai"),
-    "ban": ("b", "an"),
-    "bang": ("b", "ang"),
-    "bao": ("b", "ao"),
-    "be": ("b", "e"),
-    "bei": ("b", "ei"),
-    "ben": ("b", "en"),
-    "beng": ("b", "eng"),
-    "bi": ("b", "i"),
-    "bian": ("b", "ian"),
-    "biao": ("b", "iao"),
-    "bie": ("b", "ie"),
-    "bin": ("b", "in"),
-    "bing": ("b", "ing"),
-    "bo": ("b", "o"),
-    "bu": ("b", "u"),
-    "ca": ("c", "a"),
-    "cai": ("c", "ai"),
-    "can": ("c", "an"),
-    "cang": ("c", "ang"),
-    "cao": ("c", "ao"),
-    "ce": ("c", "e"),
-    "cen": ("c", "en"),
-    "ceng": ("c", "eng"),
-    "cha": ("ch", "a"),
-    "chai": ("ch", "ai"),
-    "chan": ("ch", "an"),
-    "chang": ("ch", "ang"),
-    "chao": ("ch", "ao"),
-    "che": ("ch", "e"),
-    "chen": ("ch", "en"),
-    "cheng": ("ch", "eng"),
-    "chi": ("ch", "iii"),
-    "chong": ("ch", "ong"),
-    "chou": ("ch", "ou"),
-    "chu": ("ch", "u"),
-    "chua": ("ch", "ua"),
-    "chuai": ("ch", "uai"),
-    "chuan": ("ch", "uan"),
-    "chuang": ("ch", "uang"),
-    "chui": ("ch", "uei"),
-    "chun": ("ch", "uen"),
-    "chuo": ("ch", "uo"),
-    "ci": ("c", "ii"),
-    "cong": ("c", "ong"),
-    "cou": ("c", "ou"),
-    "cu": ("c", "u"),
-    "cuan": ("c", "uan"),
-    "cui": ("c", "uei"),
-    "cun": ("c", "uen"),
-    "cuo": ("c", "uo"),
-    "da": ("d", "a"),
-    "dai": ("d", "ai"),
-    "dan": ("d", "an"),
-    "dang": ("d", "ang"),
-    "dao": ("d", "ao"),
-    "de": ("d", "e"),
-    "dei": ("d", "ei"),
-    "den": ("d", "en"),
-    "deng": ("d", "eng"),
-    "di": ("d", "i"),
-    "dia": ("d", "ia"),
-    "dian": ("d", "ian"),
-    "diao": ("d", "iao"),
-    "die": ("d", "ie"),
-    "ding": ("d", "ing"),
-    "diu": ("d", "iou"),
-    "dong": ("d", "ong"),
-    "dou": ("d", "ou"),
-    "du": ("d", "u"),
-    "duan": ("d", "uan"),
-    "dui": ("d", "uei"),
-    "dun": ("d", "uen"),
-    "duo": ("d", "uo"),
-    "e": ("^", "e"),
-    "ei": ("^", "ei"),
-    "en": ("^", "en"),
-    "ng": ("^", "en"),
-    "eng": ("^", "eng"),
-    "er": ("^", "er"),
-    "fa": ("f", "a"),
-    "fan": ("f", "an"),
-    "fang": ("f", "ang"),
-    "fei": ("f", "ei"),
-    "fen": ("f", "en"),
-    "feng": ("f", "eng"),
-    "fo": ("f", "o"),
-    "fou": ("f", "ou"),
-    "fu": ("f", "u"),
-    "ga": ("g", "a"),
-    "gai": ("g", "ai"),
-    "gan": ("g", "an"),
-    "gang": ("g", "ang"),
-    "gao": ("g", "ao"),
-    "ge": ("g", "e"),
-    "gei": ("g", "ei"),
-    "gen": ("g", "en"),
-    "geng": ("g", "eng"),
-    "gong": ("g", "ong"),
-    "gou": ("g", "ou"),
-    "gu": ("g", "u"),
-    "gua": ("g", "ua"),
-    "guai": ("g", "uai"),
-    "guan": ("g", "uan"),
-    "guang": ("g", "uang"),
-    "gui": ("g", "uei"),
-    "gun": ("g", "uen"),
-    "guo": ("g", "uo"),
-    "ha": ("h", "a"),
-    "hai": ("h", "ai"),
-    "han": ("h", "an"),
-    "hang": ("h", "ang"),
-    "hao": ("h", "ao"),
-    "he": ("h", "e"),
-    "hei": ("h", "ei"),
-    "hen": ("h", "en"),
-    "heng": ("h", "eng"),
-    "hong": ("h", "ong"),
-    "hou": ("h", "ou"),
-    "hu": ("h", "u"),
-    "hua": ("h", "ua"),
-    "huai": ("h", "uai"),
-    "huan": ("h", "uan"),
-    "huang": ("h", "uang"),
-    "hui": ("h", "uei"),
-    "hun": ("h", "uen"),
-    "huo": ("h", "uo"),
-    "ji": ("j", "i"),
-    "jia": ("j", "ia"),
-    "jian": ("j", "ian"),
-    "jiang": ("j", "iang"),
-    "jiao": ("j", "iao"),
-    "jie": ("j", "ie"),
-    "jin": ("j", "in"),
-    "jing": ("j", "ing"),
-    "jiong": ("j", "iong"),
-    "jiu": ("j", "iou"),
-    "ju": ("j", "v"),
-    "juan": ("j", "van"),
-    "jue": ("j", "ve"),
-    "jun": ("j", "vn"),
-    "ka": ("k", "a"),
-    "kai": ("k", "ai"),
-    "kan": ("k", "an"),
-    "kang": ("k", "ang"),
-    "kao": ("k", "ao"),
-    "ke": ("k", "e"),
-    "kei": ("k", "ei"),
-    "ken": ("k", "en"),
-    "keng": ("k", "eng"),
-    "kong": ("k", "ong"),
-    "kou": ("k", "ou"),
-    "ku": ("k", "u"),
-    "kua": ("k", "ua"),
-    "kuai": ("k", "uai"),
-    "kuan": ("k", "uan"),
-    "kuang": ("k", "uang"),
-    "kui": ("k", "uei"),
-    "kun": ("k", "uen"),
-    "kuo": ("k", "uo"),
-    "la": ("l", "a"),
-    "lai": ("l", "ai"),
-    "lan": ("l", "an"),
-    "lang": ("l", "ang"),
-    "lao": ("l", "ao"),
-    "le": ("l", "e"),
-    "lei": ("l", "ei"),
-    "leng": ("l", "eng"),
-    "li": ("l", "i"),
-    "lia": ("l", "ia"),
-    "lian": ("l", "ian"),
-    "liang": ("l", "iang"),
-    "liao": ("l", "iao"),
-    "lie": ("l", "ie"),
-    "lin": ("l", "in"),
-    "ling": ("l", "ing"),
-    "liu": ("l", "iou"),
-    "lo": ("l", "o"),
-    "long": ("l", "ong"),
-    "lou": ("l", "ou"),
-    "lu": ("l", "u"),
-    "lv": ("l", "v"),
-    "luan": ("l", "uan"),
-    "lve": ("l", "ve"),
-    "lue": ("l", "ve"),
-    "lun": ("l", "uen"),
-    "luo": ("l", "uo"),
-    "ma": ("m", "a"),
-    "mai": ("m", "ai"),
-    "man": ("m", "an"),
-    "mang": ("m", "ang"),
-    "mao": ("m", "ao"),
-    "me": ("m", "e"),
-    "mei": ("m", "ei"),
-    "men": ("m", "en"),
-    "meng": ("m", "eng"),
-    "mi": ("m", "i"),
-    "mian": ("m", "ian"),
-    "miao": ("m", "iao"),
-    "mie": ("m", "ie"),
-    "min": ("m", "in"),
-    "ming": ("m", "ing"),
-    "miu": ("m", "iou"),
-    "mo": ("m", "o"),
-    "mou": ("m", "ou"),
-    "mu": ("m", "u"),
-    "n": ("^", "en"),
-    "na": ("n", "a"),
-    "nai": ("n", "ai"),
-    "nan": ("n", "an"),
-    "nang": ("n", "ang"),
-    "nao": ("n", "ao"),
-    "ne": ("n", "e"),
-    "nei": ("n", "ei"),
-    "nen": ("n", "en"),
-    "neng": ("n", "eng"),
-    "ni": ("n", "i"),
-    "nia": ("n", "ia"),
-    "nian": ("n", "ian"),
-    "niang": ("n", "iang"),
-    "niao": ("n", "iao"),
-    "nie": ("n", "ie"),
-    "nin": ("n", "in"),
-    "ning": ("n", "ing"),
-    "niu": ("n", "iou"),
-    "nong": ("n", "ong"),
-    "nou": ("n", "ou"),
-    "nu": ("n", "u"),
-    "nv": ("n", "v"),
-    "nuan": ("n", "uan"),
-    "nve": ("n", "ve"),
-    "nue": ("n", "ve"),
-    "nuo": ("n", "uo"),
-    "o": ("^", "o"),
-    "ou": ("^", "ou"),
-    "pa": ("p", "a"),
-    "pai": ("p", "ai"),
-    "pan": ("p", "an"),
-    "pang": ("p", "ang"),
-    "pao": ("p", "ao"),
-    "pe": ("p", "e"),
-    "pei": ("p", "ei"),
-    "pen": ("p", "en"),
-    "peng": ("p", "eng"),
-    "pi": ("p", "i"),
-    "pian": ("p", "ian"),
-    "piao": ("p", "iao"),
-    "pie": ("p", "ie"),
-    "pin": ("p", "in"),
-    "ping": ("p", "ing"),
-    "po": ("p", "o"),
-    "pou": ("p", "ou"),
-    "pu": ("p", "u"),
-    "qi": ("q", "i"),
-    "qia": ("q", "ia"),
-    "qian": ("q", "ian"),
-    "qiang": ("q", "iang"),
-    "qiao": ("q", "iao"),
-    "qie": ("q", "ie"),
-    "qin": ("q", "in"),
-    "qing": ("q", "ing"),
-    "qiong": ("q", "iong"),
-    "qiu": ("q", "iou"),
-    "qu": ("q", "v"),
-    "quan": ("q", "van"),
-    "que": ("q", "ve"),
-    "qun": ("q", "vn"),
-    "ran": ("r", "an"),
-    "rang": ("r", "ang"),
-    "rao": ("r", "ao"),
-    "re": ("r", "e"),
-    "ren": ("r", "en"),
-    "reng": ("r", "eng"),
-    "ri": ("r", "iii"),
-    "rong": ("r", "ong"),
-    "rou": ("r", "ou"),
-    "ru": ("r", "u"),
-    "rua": ("r", "ua"),
-    "ruan": ("r", "uan"),
-    "rui": ("r", "uei"),
-    "run": ("r", "uen"),
-    "ruo": ("r", "uo"),
-    "sa": ("s", "a"),
-    "sai": ("s", "ai"),
-    "san": ("s", "an"),
-    "sang": ("s", "ang"),
-    "sao": ("s", "ao"),
-    "se": ("s", "e"),
-    "sen": ("s", "en"),
-    "seng": ("s", "eng"),
-    "sha": ("sh", "a"),
-    "shai": ("sh", "ai"),
-    "shan": ("sh", "an"),
-    "shang": ("sh", "ang"),
-    "shao": ("sh", "ao"),
-    "she": ("sh", "e"),
-    "shei": ("sh", "ei"),
-    "shen": ("sh", "en"),
-    "sheng": ("sh", "eng"),
-    "shi": ("sh", "iii"),
-    "shou": ("sh", "ou"),
-    "shu": ("sh", "u"),
-    "shua": ("sh", "ua"),
-    "shuai": ("sh", "uai"),
-    "shuan": ("sh", "uan"),
-    "shuang": ("sh", "uang"),
-    "shui": ("sh", "uei"),
-    "shun": ("sh", "uen"),
-    "shuo": ("sh", "uo"),
-    "si": ("s", "ii"),
-    "song": ("s", "ong"),
-    "sou": ("s", "ou"),
-    "su": ("s", "u"),
-    "suan": ("s", "uan"),
-    "sui": ("s", "uei"),
-    "sun": ("s", "uen"),
-    "suo": ("s", "uo"),
-    "ta": ("t", "a"),
-    "tai": ("t", "ai"),
-    "tan": ("t", "an"),
-    "tang": ("t", "ang"),
-    "tao": ("t", "ao"),
-    "te": ("t", "e"),
-    "tei": ("t", "ei"),
-    "teng": ("t", "eng"),
-    "ti": ("t", "i"),
-    "tian": ("t", "ian"),
-    "tiao": ("t", "iao"),
-    "tie": ("t", "ie"),
-    "ting": ("t", "ing"),
-    "tong": ("t", "ong"),
-    "tou": ("t", "ou"),
-    "tu": ("t", "u"),
-    "tuan": ("t", "uan"),
-    "tui": ("t", "uei"),
-    "tun": ("t", "uen"),
-    "tuo": ("t", "uo"),
-    "wa": ("^", "ua"),
-    "wai": ("^", "uai"),
-    "wan": ("^", "uan"),
-    "wang": ("^", "uang"),
-    "wei": ("^", "uei"),
-    "wen": ("^", "uen"),
-    "weng": ("^", "ueng"),
-    "wo": ("^", "uo"),
-    "wu": ("^", "u"),
-    "xi": ("x", "i"),
-    "xia": ("x", "ia"),
-    "xian": ("x", "ian"),
-    "xiang": ("x", "iang"),
-    "xiao": ("x", "iao"),
-    "xie": ("x", "ie"),
-    "xin": ("x", "in"),
-    "xing": ("x", "ing"),
-    "xiong": ("x", "iong"),
-    "xiu": ("x", "iou"),
-    "xu": ("x", "v"),
-    "xuan": ("x", "van"),
-    "xue": ("x", "ve"),
-    "xun": ("x", "vn"),
-    "ya": ("^", "ia"),
-    "yan": ("^", "ian"),
-    "yang": ("^", "iang"),
-    "yao": ("^", "iao"),
-    "ye": ("^", "ie"),
-    "yi": ("^", "i"),
-    "yin": ("^", "in"),
-    "ying": ("^", "ing"),
-    "yo": ("^", "iou"),
-    "yong": ("^", "iong"),
-    "you": ("^", "iou"),
-    "yu": ("^", "v"),
-    "yuan": ("^", "van"),
-    "yue": ("^", "ve"),
-    "yun": ("^", "vn"),
-    "za": ("z", "a"),
-    "zai": ("z", "ai"),
-    "zan": ("z", "an"),
-    "zang": ("z", "ang"),
-    "zao": ("z", "ao"),
-    "ze": ("z", "e"),
-    "zei": ("z", "ei"),
-    "zen": ("z", "en"),
-    "zeng": ("z", "eng"),
-    "zha": ("zh", "a"),
-    "zhai": ("zh", "ai"),
-    "zhan": ("zh", "an"),
-    "zhang": ("zh", "ang"),
-    "zhao": ("zh", "ao"),
-    "zhe": ("zh", "e"),
-    "zhei": ("zh", "ei"),
-    "zhen": ("zh", "en"),
-    "zheng": ("zh", "eng"),
-    "zhi": ("zh", "iii"),
-    "zhong": ("zh", "ong"),
-    "zhou": ("zh", "ou"),
-    "zhu": ("zh", "u"),
-    "zhua": ("zh", "ua"),
-    "zhuai": ("zh", "uai"),
-    "zhuan": ("zh", "uan"),
-    "zhuang": ("zh", "uang"),
-    "zhui": ("zh", "uei"),
-    "zhun": ("zh", "uen"),
-    "zhuo": ("zh", "uo"),
-    "zi": ("z", "ii"),
-    "zong": ("z", "ong"),
-    "zou": ("z", "ou"),
-    "zu": ("z", "u"),
-    "zuan": ("z", "uan"),
-    "zui": ("z", "uei"),
-    "zun": ("z", "uen"),
-    "zuo": ("z", "uo"),
-}
+
+
+import os
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+from transformers import BertModel, BertConfig, BertTokenizer
+
+
+class CharEmbedding(nn.Module):
+    def __init__(self, model_dir):
+        super().__init__()
+        self.tokenizer = BertTokenizer.from_pretrained(model_dir)
+        self.bert_config = BertConfig.from_pretrained(model_dir)
+        self.hidden_size = self.bert_config.hidden_size
+        self.bert = BertModel(self.bert_config)
+        self.proj = nn.Linear(self.hidden_size, 256)
+        self.linear = nn.Linear(256, 3)
+
+    def text2Token(self, text):
+        token = self.tokenizer.tokenize(text)
+        txtid = self.tokenizer.convert_tokens_to_ids(token)
+        return txtid
+
+    def forward(self, inputs_ids, inputs_masks, tokens_type_ids):
+        out_seq = self.bert(input_ids=inputs_ids,
+                            attention_mask=inputs_masks,
+                            token_type_ids=tokens_type_ids)[0]
+        out_seq = self.proj(out_seq)
+        return out_seq
+
+
+class TTSProsody(object):
+    def __init__(self, path, device):
+        self.device = device
+        self.char_model = CharEmbedding(path)
+        self.char_model.load_state_dict(
+            torch.load(
+                os.path.join(path, 'prosody_model.pt'),
+                map_location="cpu"
+            ),
+            strict=False
+        )
+        self.char_model.eval()
+        self.char_model.to(self.device)
+
+    def get_char_embeds(self, text):
+        input_ids = self.char_model.text2Token(text)
+        input_masks = [1] * len(input_ids)
+        type_ids = [0] * len(input_ids)
+        input_ids = torch.LongTensor([input_ids]).to(self.device)
+        input_masks = torch.LongTensor([input_masks]).to(self.device)
+        type_ids = torch.LongTensor([type_ids]).to(self.device)
+
+        with torch.no_grad():
+            char_embeds = self.char_model(
+                input_ids, input_masks, type_ids).squeeze(0).cpu()
+        return char_embeds
+
+    def expand_for_phone(self, char_embeds, length):  # length of phones for char
+        assert char_embeds.size(0) == len(length)
+        expand_vecs = list()
+        for vec, leng in zip(char_embeds, length):
+            vec = vec.expand(leng, -1)
+            expand_vecs.append(vec)
+        expand_embeds = torch.cat(expand_vecs, 0)
+        assert expand_embeds.size(0) == sum(length)
+        return expand_embeds.numpy()
+#========================
+import re
+
+import pypinyin
+from pypinyin import Style
+from pypinyin.contrib.neutral_tone import NeutralToneWith5Mixin
+from pypinyin.converter import DefaultConverter
+from pypinyin.core import Pinyin
+
+import numpy as np
+
+from text.phoneme_table import pinyin_dict
+
+
+class MyConverter(NeutralToneWith5Mixin, DefaultConverter):
+    pass
+
+
+def is_chinese(uchar):
+    if uchar >= u'\u4e00' and uchar <= u'\u9fa5':
+        return True
+    else:
+        return False
+
+
+def clean_chinese(text: str):
+    text = text.strip()
+    text_clean = []
+    for char in text:
+        if (is_chinese(char)):
+            text_clean.append(char)
+        else:
+            if len(text_clean) > 1 and is_chinese(text_clean[-1]):
+                text_clean.append(',')
+    text_clean = ''.join(text_clean).strip(',')
+    return text_clean
+
+
+class VITS_PinYin:
+    def __init__(self, bert_path, device):
+        self.pinyin_parser = Pinyin(MyConverter())
+        self.prosody = TTSProsody(bert_path, device)
+
+    def chinese_to_phonemes(self, text):
+        # @todo:考虑使用g2pw的chinese bert替换原始的pypinyin,目前测试下来运行速度太慢。
+        # 将标准中文文本符号替换成 bert 符号库中的单符号,以保证bert的效果.
+        text = text.replace("——", "...")\
+            .replace("—", "...")\
+            .replace("……", "...")\
+            .replace("…", "...")\
+            .replace('“', '"')\
+            .replace('”', '"')\
+            .replace("\n", "")
+        tokens = self.prosody.char_model.tokenizer.tokenize(text)
+        text = ''.join(tokens)
+        assert not tokens.count("[UNK]")
+        pinyins = np.reshape(pypinyin.pinyin(text, style=pypinyin.TONE3), (-1))
+        try:
+            phone_index = 0
+            phone_items = []
+            phone_items.append('sil')
+            count_phone = []
+            count_phone.append(1)
+            temp = ""
+
+            len_pys = len(tokens)
+            for word in tokens:
+                if is_chinese(word):
+                    count_phone.append(2)
+                    if (phone_index >= len_pys):
+                        print(
+                            f"!!!![{text}]plz check ur text whether includes MULTIBYTE symbol.\
+                                (请检查你的文本中是否包含多字节符号)")
+                    pinyin = pinyins[phone_index]
+                    phone_index = phone_index + 1
+                    if not pinyin[-1].isdigit():
+                        pinyin += "5"
+                    if pinyin[:-1] in pinyin_dict:
+                        tone = pinyin[-1]
+                        a = pinyin[:-1]
+                        a1, a2 = pinyin_dict[a]
+                        phone_items += [a1, a2 + tone]
+                else:
+                    temp += word
+                    if temp == pinyins[phone_index]:
+                        temp = ""
+                        phone_index += 1
+                    count_phone.append(1)
+                    phone_items.append('sp')
+
+            count_phone.append(1)
+            phone_items.append('sil')
+            phone_items_str = ' '.join(phone_items)
+        except IndexError as e:
+            print('except:', e)
+
+        text = f'[PAD]{text}[PAD]'
+        char_embeds = self.prosody.get_char_embeds(text)
+        char_embeds = self.prosody.expand_for_phone(char_embeds, count_phone)
+        return phone_items_str, char_embeds
