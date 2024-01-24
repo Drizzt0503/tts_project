@@ -58,7 +58,10 @@ class TTS_Vits():
     def infer(self,path,text,pace):
         item=text
         item=self.cc.convert(item)
-        phonemes, char_embeds = self.tts_front.chinese_to_phonemes(item)
+        try:
+            phonemes, char_embeds = self.tts_front.chinese_to_phonemes(item)
+        except:
+            return 1, 'not in dic'
         input_ids = cleaned_text_to_sequence(phonemes)
         with torch.no_grad():
             x_tst = torch.LongTensor(input_ids).unsqueeze(0).to(self.device)
@@ -69,6 +72,7 @@ class TTS_Vits():
         print('infer done')
         self._save_wav(audio, path, self.hps.data.sampling_rate)
         print('save done')
+        return 0, 'ok'
 # device
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class TTS_VitsM():
@@ -111,7 +115,10 @@ class TTS_VitsM():
     def infer(self,path,text,pace):
         item=text
         item=self.cc.convert(item)
-        phonemes, char_embeds = self.tts_front.chinese_to_phonemes(item)
+        try:
+            phonemes, char_embeds = self.tts_front.chinese_to_phonemes(item)
+        except:
+            return 1, 'not in dic'
         input_ids = cleaned_text_to_sequence(phonemes)
         with torch.no_grad():
             ssid=self.sid.unsqueeze(0).to(self.device)
@@ -122,6 +129,7 @@ class TTS_VitsM():
         print('infer done')
         self._save_wav(audio, path, self.hps.data.sampling_rate)
         print('save done')
+        return 0, 'ok'
 if __name__ == '__main__':
     text="零件費用產生，服務人員將另行報價，請問您接受嗎?"
     print(text)
@@ -130,5 +138,6 @@ if __name__ == '__main__':
     #infer(save_file_path, input_text, speech_speed)
     #tts_serv.infer('./hello.wav',text,0.8)
     aaa=TTS_VitsM("cuda",None)    #model pace do not use yet
-    aaa.infer('./hello.wav',text,1.0)
+    a,b = aaa.infer('./hello.wav',text,1.0)
+    print(a,b)
 

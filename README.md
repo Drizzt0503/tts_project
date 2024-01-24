@@ -37,7 +37,7 @@ embedding process:
 data_utils.py, vits_prepare.py
 
 flow:
-python pre_vits.py --dataset BZN --model vits
+python pre_vits.py --dataset BZN --model vits --config config
 if None user has to build dataset in stardard way
 1. from dataset to temp
 2. prepare in temp:text spec wave bert embedding
