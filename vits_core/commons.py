@@ -159,3 +159,11 @@ def clip_grad_value_(parameters, clip_value, norm_type=2):
             p.grad.data.clamp_(min=-clip_value, max=clip_value)
     total_norm = total_norm ** (1.0 / norm_type)
     return total_norm
+
+def smooth_loss(loss,old=None):
+    if old == None:
+        old=[0,0,0,0,0,0]
+    to_up=[]
+    for a,b in zip(loss,old):
+        to_up.append(a*0.05+b*0.95)
+    return to_up

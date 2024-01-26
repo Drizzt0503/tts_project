@@ -5,7 +5,7 @@ import numpy as np
 import torch
 import torch.utils.data
 
-import commons
+import vits_core.commons
 from utils import load_wav_to_torch, load_filepaths_and_text
 from text import cleaned_text_to_sequence
 
@@ -276,3 +276,160 @@ class DistributedBucketSampler(torch.utils.data.distributed.DistributedSampler):
 
     def __len__(self):
         return self.num_samples // self.batch_size
+
+class TextAudioSpeakerLoader(torch.utils.data.Dataset):
+    """
+    1) loads audio, text pairs
+    2) normalizes text and converts them to sequences of integers
+    3) computes spectrograms from audio files.
+    """
+
+    def __init__(self, audiopaths_and_text, hparams):
+        self.audiopaths_and_text = load_filepaths_and_text(audiopaths_and_text)
+        self.max_wav_value = hparams.max_wav_value
+        self.sampling_rate = hparams.sampling_rate
+        self.filter_length = hparams.filter_length
+        self.hop_length = hparams.hop_length
+        self.win_length = hparams.win_length
+        self.sampling_rate = hparams.sampling_rate
+
+        self.cleaned_text = getattr(hparams, "cleaned_text", False)
+
+        self.add_blank = hparams.add_blank
+        self.min_text_len = getattr(hparams, "min_text_len", 1)
+        self.max_text_len = getattr(hparams, "max_text_len", 100)
+
+        random.seed(1234)
+        random.shuffle(self.audiopaths_and_text)
+        self._filter()
+
+    def _filter(self):
+        """
+        Filter text & store spec lengths
+        """
+        # Store spectrogram lengths for Bucketing
+        # wav_length ~= file_size / (wav_channels * Bytes per dim) = file_size / (1 * 2)
+        # spec_length = wav_length // hop_length
+
+        audiopaths_and_text_new = []
+        lengths = []
+        for audiopath, spec, bert, text,sid in self.audiopaths_and_text:
+            length = len(text.split())
+            if self.min_text_len <= length and length <= self.max_text_len:
+                audiopaths_and_text_new.append([audiopath, spec, bert, text,sid])
+                lengths.append(os.path.getsize(audiopath) // (2 * self.hop_length))
+        self.audiopaths_and_text = audiopaths_and_text_new
+        self.lengths = lengths
+
+    def get_audio_text_pair(self, audiopath_and_text):
+        # separate filename and text
+        audiopath, spec,sid = audiopath_and_text[0], audiopath_and_text[1], audiopath_and_text[4]
+        bert, text = audiopath_and_text[2], audiopath_and_text[3]
+        wave = self.get_audio(audiopath)
+        spec = torch.load(spec)
+        text = self.get_text(text)
+        bert = self.get_bert(bert)
+        sid=self.get_sid(sid)
+        return (spec, wave, text, bert, sid)
+
+    def get_audio(self, filename):
+        audio, sampling_rate = load_wav_to_torch(filename)
+        if sampling_rate != self.sampling_rate:
+            raise ValueError(
+                "{} {} SR doesn't match target {} SR".format(
+                    sampling_rate, self.sampling_rate
+                )
+            )
+        audio_norm = audio / self.max_wav_value
+        audio_norm = audio_norm.unsqueeze(0)
+        return audio_norm
+
+    def get_bert(self, bert):
+        bert_embed = np.load(bert)
+        bert_embed = bert_embed.astype(np.float32)
+        bert_embed = torch.FloatTensor(bert_embed)
+        return bert_embed
+
+    def get_text(self, text):
+        text_norm = cleaned_text_to_sequence(text)
+        if self.add_blank:
+            text_norm = commons.intersperse(text_norm, 0)
+        text_norm = torch.LongTensor(text_norm)
+        return text_norm
+
+    def get_sid(self,sid):
+       	sid=  torch.load(sid)
+        sid=torch.squeeze(sid,0)
+        #print(sid.shape,type(sid))
+        #sid=torch.FloatTensor(sid)
+        #print(sid.shape,type(sid))
+        return sid
+
+    def __getitem__(self, index):
+        return self.get_audio_text_pair(self.audiopaths_and_text[index])
+
+    def __len__(self):
+        return len(self.audiopaths_and_text)
+
+
+class TextAudioSpeakerCollate():
+    """ Zero-pads model inputs and targets
+    """
+
+    def __init__(self, return_ids=False):
+        self.return_ids = return_ids
+
+    def __call__(self, batch):
+        """Collate's training batch from normalized text and aduio
+        PARAMS
+        ------
+        batch: [text_normalized, spec_normalized, wav_normalized]
+        """
+        # Right zero-pad all one-hot text sequences to max input length
+        _, ids_sorted_decreasing = torch.sort(
+            torch.LongTensor([x[0].size(1) for x in batch]), dim=0, descending=True
+        )
+
+        max_spec_len = max([x[0].size(1) for x in batch])
+        max_wav_len = max([x[1].size(1) for x in batch])
+        max_text_len = max([len(x[2]) for x in batch])
+        max_bert_len = max([len(x[3]) for x in batch])
+
+        spec_lengths = torch.LongTensor(len(batch))
+        wav_lengths = torch.LongTensor(len(batch))
+        text_lengths = torch.LongTensor(len(batch))
+
+        spec_padded = torch.FloatTensor(len(batch), batch[0][0].size(0), max_spec_len)
+        wav_padded = torch.FloatTensor(len(batch), 1, max_wav_len)
+        text_padded = torch.LongTensor(len(batch), max_bert_len)
+        # bert_padded = torch.FloatTensor(len(batch), max_text_len, 256)
+        bert_padded = torch.FloatTensor(len(batch), max_bert_len, 256)
+        sid = torch.FloatTensor(len(batch),192)
+
+        spec_padded.zero_()
+        wav_padded.zero_()
+        text_padded.zero_()
+        bert_padded.zero_()
+        for i in range(len(ids_sorted_decreasing)):
+            row = batch[ids_sorted_decreasing[i]]
+
+            spec = row[0]
+            spec_padded[i, :, :spec.size(1)] = spec
+            spec_lengths[i] = spec.size(1)
+
+            wav = row[1]
+            wav_padded[i, :, :wav.size(1)] = wav
+            wav_lengths[i] = wav.size(1)
+
+            text = row[2]
+            text_padded[i, :text.size(0)] = text
+            text_lengths[i] = text.size(0)
+
+            bert = row[3]
+            bert_padded[i, :bert.size(0), :] = bert
+
+            sid[i] = row[4]
+
+        if self.return_ids:
+            return text_padded, text_lengths, bert_padded, spec_padded, spec_lengths, wav_padded, wav_lengths, sid, ids_sorted_decreasing
+        return text_padded, text_lengths, bert_padded, spec_padded, spec_lengths, wav_padded, wav_lengths, sid

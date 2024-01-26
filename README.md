@@ -78,6 +78,7 @@ now use temp_model
 
 vits_pinyin need to separate into pinyin and bert
 
+change model save dir for train job
 # temp
 outter example audio:
 /var/www/html/webuploader/audio_temp

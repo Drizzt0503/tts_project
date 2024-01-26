@@ -3,6 +3,7 @@ import logging
 logging.getLogger('numba').setLevel(logging.WARNING)
 logging.getLogger('matplotlib').setLevel(logging.WARNING)
 
+import csv
 import os
 import json
 import argparse
@@ -10,6 +11,7 @@ import itertools
 import math
 import torch
 import tqdm
+import time
 from torch import nn, optim
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
@@ -22,6 +24,7 @@ from torch.cuda.amp import autocast, GradScaler
 import vits_core.commons as commons
 import utils
 from data_utils import TextAudioLoader, TextAudioCollate, DistributedBucketSampler
+from data_utils import TextAudioSpeakerLoader, TextAudioSpeakerCollate
 from vits_core.models import MultiPeriodDiscriminator
 from vits_core.losses import generator_loss, discriminator_loss, feature_loss, kl_loss
 from sound_processing.mel_processing import mel_spectrogram_torch, spec_to_mel_torch
@@ -52,7 +55,11 @@ def main():
 
 
 def run(rank, n_gpus, hps):
+    global old_status
+    old_status=[0,0,0,0,0,0]
     global global_step
+    global to_save
+    to_save=[]
     if rank == 0:
         logger = utils.get_logger(hps.model_dir)
         logger.info(hps)
@@ -67,7 +74,7 @@ def run(rank, n_gpus, hps):
     torch.manual_seed(hps.train.seed)
     torch.cuda.set_device(rank)
 
-    train_dataset = TextAudioLoader(hps.data.training_files, hps.data)
+    train_dataset = TextAudioSpeakerLoader(hps.data.training_files, hps.data)
     train_sampler = DistributedBucketSampler(
         train_dataset,
         hps.train.batch_size,
@@ -78,20 +85,20 @@ def run(rank, n_gpus, hps):
     )
     # It is possible that dataloader's workers are out of shared memory. Please try to raise your shared memory limit.
     # num_workers=8 -> num_workers=4
-    collate_fn = TextAudioCollate()
+    collate_fn = TextAudioSpeakerCollate()
     train_loader = DataLoader(
         train_dataset,
-        num_workers=2,
+        num_workers=0,
         shuffle=False,
         pin_memory=True,
         collate_fn=collate_fn,
         batch_sampler=train_sampler,
     )
     if rank == 0:
-        eval_dataset = TextAudioLoader(hps.data.validation_files, hps.data)
+        eval_dataset = TextAudioSpeakerLoader(hps.data.validation_files, hps.data)
         eval_loader = DataLoader(
             eval_dataset,
-            num_workers=2,
+            num_workers=0,
             shuffle=False,
             batch_size=hps.train.batch_size,
             pin_memory=True,
@@ -103,6 +110,7 @@ def run(rank, n_gpus, hps):
         len(symbols),
         hps.data.filter_length // 2 + 1,
         hps.train.segment_size // hps.data.hop_length,
+        n_speakers=hps.data.n_speakers,
         **hps.model,
     ).cuda(rank)
     net_d = MultiPeriodDiscriminator(hps.model.use_spectral_norm).cuda(rank)
@@ -133,7 +141,6 @@ def run(rank, n_gpus, hps):
             logger.info("no teacher model.")
 
     net_d = DDP(net_d, device_ids=[rank])
-
     try:
         _, _, _, epoch_str = utils.load_checkpoint(
             utils.latest_checkpoint_path(hps.model_dir, "G_*.pth"), net_g, optim_g
@@ -145,6 +152,10 @@ def run(rank, n_gpus, hps):
     except:
         epoch_str = 1
         global_step = 0
+    #utils.load_model('../model/G_AI3.pth', net_g)
+    #utils.load_model('../model/D_AI3.pth', net_d)
+    epoch_str = 1
+    global_step = 0
 
     scheduler_g = torch.optim.lr_scheduler.ExponentialLR(
         optim_g, gamma=hps.train.lr_decay, last_epoch=epoch_str - 2
@@ -198,14 +209,18 @@ def train_and_evaluate(
 
     train_loader.batch_sampler.set_epoch(epoch)
     global global_step
+    global old_status
+    global to_save
+    to_save=[]
 
     net_g.train()
     net_d.train()
     if rank == 0:
-        loader = tqdm.tqdm(train_loader, desc='Loading train data')
+        #loader = tqdm.tqdm(train_loader, desc='Loading train data')
+        loader = train_loader
     else:
         loader = train_loader
-    for batch_idx, (x, x_lengths, bert, spec, spec_lengths, y, y_lengths) in enumerate(loader):
+    for batch_idx, (x, x_lengths, bert, spec, spec_lengths, y, y_lengths,speakers) in enumerate(loader):
         x, x_lengths = x.cuda(rank, non_blocking=True), x_lengths.cuda(
             rank, non_blocking=True
         )
@@ -216,10 +231,11 @@ def train_and_evaluate(
             rank, non_blocking=True
         )
         bert = bert.cuda(rank, non_blocking=True)
+        speakers=speakers.cuda(rank, non_blocking=True)
 
         with autocast(enabled=hps.train.fp16_run):
             y_hat, l_length, attn, ids_slice, x_mask, z_mask, \
-            (z, z_p, z_r, m_p, logs_p, m_q, logs_q) = net_g(x, x_lengths, bert, spec, spec_lengths)
+            (z, z_p, z_r, m_p, logs_p, m_q, logs_q) = net_g(x, x_lengths, bert, spec, spec_lengths,speakers)
 
             mel = spec_to_mel_torch(
                 spec,
@@ -293,6 +309,25 @@ def train_and_evaluate(
                     loss_kl,
                     loss_kl_r,
                 ]
+                #print out region
+                run_status0=[epoch,global_step,lr]
+                run_status1=[sum(losses_disc_r)/6,sum(losses_disc_g)/6,loss_gen.item()/6,loss_fm.item()\
+                        ,loss_mel.item(),loss_dur.item()]
+                run_status2=[loss_kl.item(),loss_kl_r.item(),grad_norm_d,grad_norm_g]
+                old_status=commons.smooth_loss(run_status1,old_status)
+                #save to csv
+                #to_save=run_status0+run_status1+run_status2+old_status
+                to_save.append(run_status0+run_status1+run_status2+old_status)
+                #with open(f'{hps.model_dir}/log.csv', 'a', encoding='UTF8') as fff:
+                #    lwriter = csv.writer(fff)
+                #    lwriter.writerow(to_save)
+                print('===============================================')
+                print('Epoch:',epoch,'Steps:',global_step)
+                print(f"    kl ={run_status2[0]:.3f}, kl_r={run_status2[1]:.3f}, grad_d={run_status2[2]:.3f}, grad_g={run_status2[3]:.3f}")
+                print(f"    Dr ={old_status[0]:.3f}, G ={old_status[2]:.3f},  Dg ={old_status[1]:.3f},  fm ={old_status[3]:.3f}")
+                print(f"    mel={old_status[4]:.3f}, dur={old_status[5]:.3f}")
+
+                """
                 logger.info(
                     "Train Epoch: {} [{:.0f}%]".format(
                         epoch, 100.0 * batch_idx / len(train_loader)
@@ -308,7 +343,7 @@ def train_and_evaluate(
                 logger.info(
                     f"loss_kl_r={loss_kl_r:.3f}"
                 )
-
+                """
                 scalar_dict = {
                     "loss/g/total": loss_gen_all,
                     "loss/d/total": loss_disc_all,
@@ -355,7 +390,13 @@ def train_and_evaluate(
                     images=image_dict,
                     scalars=scalar_dict,
                 )
+            #if amel <=18.5 and adur <= 0.06 and epoch >=100:
+            #    utils.save_model(net_g,'../model/vits/vits.pth')
+            #    sys.exit(1)
+            #if epoch ==hps.train.epochs:
+            #    utils.save_model(net_g,'../model/VitsM/VitsM.pth')
 
+            
             if global_step % hps.train.eval_interval == 0:
                 evaluate(hps, net_g, eval_loader, writer_eval)
                 utils.save_checkpoint(
@@ -372,8 +413,15 @@ def train_and_evaluate(
                     epoch,
                     os.path.join(hps.model_dir, "D_{}.pth".format(global_step)),
                 )
+            
         global_step += 1
-
+    """
+    if rank==0:
+        with open(f'{hps.model_dir}/log.csv', 'a', encoding='UTF8') as fff:
+            lwriter = csv.writer(fff)
+            for any in to_save:
+                lwriter.writerow(any)
+    """
     if rank == 0:
         logger.info("====> Epoch: {}".format(epoch))
 
@@ -381,11 +429,12 @@ def train_and_evaluate(
 def evaluate(hps, generator, eval_loader, writer_eval):
     generator.eval()
     with torch.no_grad():
-        for batch_idx, (x, x_lengths, bert, spec, spec_lengths, y, y_lengths) in enumerate(eval_loader):
+        for batch_idx, (x, x_lengths, bert, spec, spec_lengths, y, y_lengths,speakers) in enumerate(eval_loader):
             x, x_lengths = x.cuda(0), x_lengths.cuda(0)
             spec, spec_lengths = spec.cuda(0), spec_lengths.cuda(0)
             y, y_lengths = y.cuda(0), y_lengths.cuda(0)
             bert = bert.cuda(0)
+            speakers = speakers.cuda(0)
 
             # remove else
             x = x[:1]
@@ -394,8 +443,9 @@ def evaluate(hps, generator, eval_loader, writer_eval):
             spec_lengths = spec_lengths[:1]
             y = y[:1]
             y_lengths = y_lengths[:1]
+            speakers = speakers[:1]
             break
-        y_hat, attn, mask, *_ = generator.module.infer(x, x_lengths, bert, max_len=1000)
+        y_hat, attn, mask, *_ = generator.module.infer(x, x_lengths, bert,speakers, max_len=1000)
         y_hat_lengths = mask.sum([1, 2]).long() * hps.data.hop_length
 
         mel = spec_to_mel_torch(

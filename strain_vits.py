@@ -10,6 +10,8 @@ import itertools
 import math
 import torch
 import tqdm
+import time
+import sys
 from torch import nn, optim
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
@@ -19,13 +21,13 @@ import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.cuda.amp import autocast, GradScaler
 
-import vits_core.commons as commons
+import vits_core.commons
 import utils
 from data_utils import TextAudioLoader, TextAudioCollate, DistributedBucketSampler
 from vits_core.models import MultiPeriodDiscriminator
 from vits_core.losses import generator_loss, discriminator_loss, feature_loss, kl_loss
 from sound_processing.mel_processing import mel_spectrogram_torch, spec_to_mel_torch
-from text.phoneme_table import symbols
+from text.symbols import symbols
 import platform
 
 torch.backends.cudnn.benchmark = True
@@ -53,6 +55,14 @@ def main():
 
 def run(rank, n_gpus, hps):
     global global_step
+    global amel
+    global adur
+    global dmel
+    global ddur
+    amel = 0
+    adur = 0
+    dmel = 1000
+    ddur = 1000
     if rank == 0:
         logger = utils.get_logger(hps.model_dir)
         logger.info(hps)
@@ -81,7 +91,7 @@ def run(rank, n_gpus, hps):
     collate_fn = TextAudioCollate()
     train_loader = DataLoader(
         train_dataset,
-        num_workers=2,
+        num_workers=0,
         shuffle=False,
         pin_memory=True,
         collate_fn=collate_fn,
@@ -91,7 +101,7 @@ def run(rank, n_gpus, hps):
         eval_dataset = TextAudioLoader(hps.data.validation_files, hps.data)
         eval_loader = DataLoader(
             eval_dataset,
-            num_workers=2,
+            num_workers=0,
             shuffle=False,
             batch_size=hps.train.batch_size,
             pin_memory=True,
@@ -133,7 +143,7 @@ def run(rank, n_gpus, hps):
             logger.info("no teacher model.")
 
     net_d = DDP(net_d, device_ids=[rank])
-
+    """
     try:
         _, _, _, epoch_str = utils.load_checkpoint(
             utils.latest_checkpoint_path(hps.model_dir, "G_*.pth"), net_g, optim_g
@@ -142,9 +152,18 @@ def run(rank, n_gpus, hps):
             utils.latest_checkpoint_path(hps.model_dir, "D_*.pth"), net_d, optim_d
         )
         global_step = (epoch_str - 1) * len(train_loader)
+        print('--------------------------------')
+        print(epoch_str,global_step)
+        print(optim_g)
+        print('--------------------------------')
     except:
         epoch_str = 1
         global_step = 0
+    """
+    utils.load_model('../model/G_BZN.pth', net_g)
+    utils.load_model('../model/D_BZN.pth', net_d)
+    epoch_str = 1
+    global_step = 0
 
     scheduler_g = torch.optim.lr_scheduler.ExponentialLR(
         optim_g, gamma=hps.train.lr_decay, last_epoch=epoch_str - 2
@@ -198,11 +217,16 @@ def train_and_evaluate(
 
     train_loader.batch_sampler.set_epoch(epoch)
     global global_step
+    global amel
+    global adur
+    global dmel
+    global ddur
 
     net_g.train()
     net_d.train()
     if rank == 0:
-        loader = tqdm.tqdm(train_loader, desc='Loading train data')
+        #loader = tqdm.tqdm(train_loader, desc='Loading train data')
+        loader = train_loader
     else:
         loader = train_loader
     for batch_idx, (x, x_lengths, bert, spec, spec_lengths, y, y_lengths) in enumerate(loader):
@@ -355,7 +379,26 @@ def train_and_evaluate(
                     images=image_dict,
                     scalars=scalar_dict,
                 )
-
+            amel = amel*0.95 + loss_mel.item()*0.05
+            adur = adur*0.95 + loss_dur.item()*0.05
+            #print('mel:',loss_mel.item(),amel)
+            #print('dur:',loss_dur.item(),adur)
+            if epoch % 20 ==0:
+                print('--------------------')
+                print(epoch,amel,adur,dmel,ddur)
+                print('--------------------')
+            #if epoch % 100 ==0 and epoch >=100:
+            #    if amel-dmel >=0 and adur-ddur>=0:
+            #        utils.save_model(net_g,'../model/vits/vits.pth')
+            #        sys.exit(1)
+            #    dmel=amel
+            #    ddur=adur
+            if amel <=18.5 and adur <= 0.06 and epoch >=100:
+                utils.save_model(net_g,'../model/Vits/Vits.pth')
+                sys.exit(1)
+            if epoch ==hps.train.epochs:
+                utils.save_model(net_g,'../model/Vits/Vits.pth')
+            """
             if global_step % hps.train.eval_interval == 0:
                 evaluate(hps, net_g, eval_loader, writer_eval)
                 utils.save_checkpoint(
@@ -372,6 +415,7 @@ def train_and_evaluate(
                     epoch,
                     os.path.join(hps.model_dir, "D_{}.pth".format(global_step)),
                 )
+            """
         global_step += 1
 
     if rank == 0:
@@ -439,4 +483,9 @@ def evaluate(hps, generator, eval_loader, writer_eval):
 
 
 if __name__ == "__main__":
+    #pid=os.getpid()
+    #with open('../status/train_state','wt') as stat:
+    #    stat.write(str(pid))
     main()
+    #with open('../status/train_state','wt') as stat:
+    #    stat.write('finish')
