@@ -29,7 +29,7 @@ class TTS_Vits():
         # pinyin
         self.tts_front = VITS_PinYin(lib_dir+"/models/prosody_bert_model", self.device)
 		# prosody_bert
-        self.prosody_bert = text_to_prosody()
+        #self.prosody_bert = text_to_prosody()
         # config
         self.config = lib_dir+'/config/bert_vits.json'
         self.hps = utils.get_hparams_from_file(self.config)
@@ -42,7 +42,8 @@ class TTS_Vits():
         # model_path = "logs/bert_vits/G_200000.pth"
         # utils.save_model(net_g, "vits_bert_model.pth")
         if modelPath == None:
-            self.model = lib_dir + "/models/vits.pth"
+            #self.model = lib_dir + "/models/vits.pth"
+            self.model = lib_dir + "/temp/gen/vits.pth"
         else:
             self.model='/home/yuhang/tts_model/'+modelPath
         utils.load_model(self.model, self.net_g)
@@ -93,8 +94,10 @@ class TTS_VitsM():
         # model_path = "logs/bert_vits/G_200000.pth"
         # utils.save_model(net_g, "vits_bert_model.pth")
         if modelPath == None :
-            self.model = lib_dir + "/models/vitsm.pth"
-            sid=torch.load(lib_dir+'/temp/josh_emb.pt')
+            #self.model = lib_dir + "/models/vitsm.pth"
+            #sid=torch.load(lib_dir+'/temp/josh_emb.pt')
+            self.model = lib_dir + "/temp/gen/vits.pth"
+            sid=torch.load(lib_dir+'/temp/gen/key.pt')
         else :
             self.model='/home/yuhang/tts_model/'+modelPath
             s_emb = modelPath.rstrip('.pth')+'_emb.pt'            

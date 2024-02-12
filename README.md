@@ -1,89 +1,147 @@
-# goal:
-1. maintain easily 
-2. git control
-each dir corrspond to one service, and has his own git 
-3. standard API
-4. functional integration
-5. error handle
+# TTS infer library
+install method:
+
+import way:
+import tts_service
+#import tts_service as vits
+from tts_service.infer_service import TTS_Vits as vits
+from tts_service.infer_service import TTS_VitsM as vitsm
+
+usage:
+class TTS_Vits,tts_VitsM
+initial: 
+	tts_vits("cuda",modelpath)    #model pace do not use yet
+infer:
+	ifer(fileName,input_text, pace)
+
+functions:
+return 
+0, 'ok'
+1, 'not in dic'
+
+text_normalization still from Evan's code
+use tw2s from OpenCC
+error source: 	1. not in dic
+		2. not chinese
+
+model path
+/home/yuhang/tts_model/b99084aeaa1411eeaf7b0011328a21bb(commnuity_id)/122(user_id)/44.pth(user_model_id)
+/home/yuhang/tts_model/b99084aeaa1411eeaf7b0011328a21bb(commnuity_id)/122(user_id)/44.pth(user_model_id)+44_emb.pt()
+
+db structure|user_model
+id | send_key | community_id | user_id | template_id | model_id | create_time | msg 
+
+
+need to chage?:
+add volumn?
+
+
+sample_code:
+
+import os
+#import sys
+#import numpy as np
+
+#import torch
+#import infer_lib.utils as utils
+#import argparse
+import time
+
+import tts_service
+#import tts_service as vits
+from tts_service.infer_service import TTS_Vits as vits
+from tts_service.infer_service import TTS_VitsM as vitsm
+
+#from scipy.io import wavfile
+#from infer_lib.text.symbols import symbols
+#from infer_lib.text import cleaned_text_to_sequence
+#from infer_lib.vits_pinyin import VITS_PinYin
+#from infer_lib.models import SynthesizerEval
+
+
+if __name__ == '__main__':
+    text="零件費用產生，服務人員將另行報價，請問您接受嗎?"
+    print(text)
+    #tts_serv=vits("cuda",None)
+    aaa=vitsm("cuda",None)    #model pace do not use yet
+    aaa.infer('./hello.wav',text,1.0)
+    #tts_serv.infer('./hello.wav',text,0.8)
 
 
 
-# real goal
-1. functional integration
-2. standard API and documentation
-2.a. error handle: input error, functional error, 
-3. git control
-
-# module 
-vits chinese module
-1. core: nececery file to construct model
-model layer:attentions.py, modules.py, monotonic_align
-function: transforms.py, commons.py
-model: models.py
-api: for infer, for train
-
-
-
-
-1a.  side model: prosody_bert, ecapa
-
-
-2. pre
-api in: text, sound.
-api out: to model.
-text process: vits_pinyin.py, text
-sound process: mel_processing.py
-embedding process:
-data_utils.py, vits_prepare.py
+## TTS_VoiceClone_Training_Service
 
 flow:
-python pre_vits.py --dataset BZN --model vits --config config
-if None user has to build dataset in stardard way
-1. from dataset to temp
-2. prepare in temp:text spec wave bert embedding
-3. into filelists
+init & prepare>find job(db)>collect data for pre-processing(task)> pre&train(task)
+> genereate example(task)> move files(task)>update db(db)>return msg> reset env(task)
+
+1. interact with db
+a. find job
+b. find sentence
+c. create user_model
+d. update train_request
+e. get id from user_model
+
+class DB_interact():
+methods:{
+init(db_settings): set db_settings, connection, cursor
+rollback():connection rollback
+search_job(): find if job exist(generated = 0) and fetch fist one by time order. if no job return None.
+}
 
 
 
 
-3. train
-losses.py, utils.py, train.py
-4. infer
-vits_infer.py
+
+2. create and reset temp environment
+./temp/train_set for dataset
+./models/ for pre-model
+./temp/gen for generated files in train_service
+make .txt and waves
+for vitsm pick up speaker embedding .pt
 
 
-### install
-write a shell script in the main dir to install for different environment
+class TTS_Task():
+method:{
+init:
+prepare_dataset(job,zipfile_path,template):
+select_sp_emb(): return to_memo, longest text file's embedding  (xxx.pt)
+train1(): for vits
+train2(): for vitsm
+generate1(): generate example for vits
+generate2(): generate example for vitsm
+}
+3. pre-processing and train
+for pre-processing: should be in the py
+for train: need pre-model path and filelists path(in config)
 
-conda create -n openvoice python=3.9
-conda activate openvoice
-conda install pytorch==1.13.1 torchvision==0.14.1 torchaudio==0.13.1 pytorch-cuda=11.7 -c pytorch -c nvidia
-pip install -r requirements.txt
 
-cd monotonic_align
+4. generate 24 example wave files
 
-python setup.py build_ext --inplace
+5. update db and return and move file to corespond dir
+
+6. reset environment
 
 
-### next to do
-remove bert module from Vits
+example_text.txt for example
+to_unzip=f'/home/dataFile/uploadzip/{ajob[2]}_{str(ajob[1])}.zip'
+example_path = f'/home/dataFile/tts_train_return/{ajob[2]}_{str(ajob[1])}'
+mod_dir='/home/yuhang/tts_model/'+db_job[2]+'/'+str(db_job[3])+'/'
+url = 'http://192.168.77.4:8080/index.php/PostAiServer/CompleteVoiceModel/'
 
-input licence
 
-handle text
+# db section
+    db_settings={
+                'host': 'localhost',
+                'user': 'root',
+                'password': '',
+                'db':'tts'
+                }
+# train_request table
 
-vist & vitsm duration predictor same but different code.
-need to generate new default vitsm model
-now use temp_model
 
-vits_pinyin need to separate into pinyin and bert
 
-change model save dir for train job
-# temp
-outter example audio:
-/var/www/html/webuploader/audio_temp
+save model name id.pth+id_emb.pt
 
-in db example audio:
-/home/yuhang/tts_dataset
 
-concate model and speaker_embedding into one file
+示範因黨?
