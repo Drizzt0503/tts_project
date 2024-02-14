@@ -82,7 +82,7 @@ class TTS_Task():
         for any in len_sort:
             print(any)
         print('===')
-        return len_sort[0][0]
+        return len_sort[0][0]+'.pt'
 
 
     def train1(self):
@@ -261,7 +261,7 @@ if __name__ == '__main__':
     template = DB.make_template(ajob[4])
     task.prepare_dataset(ajob,to_unzip,template)
     if mtype == 2:
-        to_memo = task.select_sp_emb()+'.pt'
+        to_memo = task.select_sp_emb()
 
     #===start pre-processing and train
     if mtype == 1:
