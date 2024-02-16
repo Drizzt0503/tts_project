@@ -141,7 +141,6 @@ def run(rank, n_gpus, hps):
             logger.info("no teacher model.")
 
     net_d = DDP(net_d, device_ids=[rank])
-
     try:
         _, _, _, epoch_str = utils.load_checkpoint(
             utils.latest_checkpoint_path(hps.model_dir, "G_*.pth"), net_g, optim_g
@@ -153,6 +152,11 @@ def run(rank, n_gpus, hps):
     except:
         epoch_str = 1
         global_step = 0
+    
+    #utils.load_model('../model/G_AI3.pth', net_g)
+    #utils.load_model('../model/D_AI3.pth', net_d)
+    epoch_str = 1
+    global_step = 0
 
     scheduler_g = torch.optim.lr_scheduler.ExponentialLR(
         optim_g, gamma=hps.train.lr_decay, last_epoch=epoch_str - 2
@@ -324,6 +328,7 @@ def train_and_evaluate(
                 print(f"    Dr ={old_status[0]:.3f}, G ={old_status[2]:.3f},  Dg ={old_status[1]:.3f},  fm ={old_status[3]:.3f}")
                 print(f"    mel={old_status[4]:.3f}, dur={old_status[5]:.3f}")
 
+                """
                 logger.info(
                     "Train Epoch: {} [{:.0f}%]".format(
                         epoch, 100.0 * batch_idx / len(train_loader)
@@ -339,6 +344,7 @@ def train_and_evaluate(
                 logger.info(
                     f"loss_kl_r={loss_kl_r:.3f}"
                 )
+                """
                 scalar_dict = {
                     "loss/g/total": loss_gen_all,
                     "loss/d/total": loss_disc_all,
@@ -385,6 +391,11 @@ def train_and_evaluate(
                     images=image_dict,
                     scalars=scalar_dict,
                 )
+            #if amel <=18.5 and adur <= 0.06 and epoch >=100:
+            #    utils.save_model(net_g,'../model/vits/vits.pth')
+            #    sys.exit(1)
+            #if epoch ==hps.train.epochs:
+            #    utils.save_model(net_g,'../model/VitsM/VitsM.pth')
 
             if global_step % hps.train.eval_interval == 0:
                 evaluate(hps, net_g, eval_loader, writer_eval)
@@ -402,13 +413,15 @@ def train_and_evaluate(
                     epoch,
                     os.path.join(hps.model_dir, "D_{}.pth".format(global_step)),
                 )
+            
         global_step += 1
+    
     if rank==0:
         with open(f'{hps.model_dir}/log.csv', 'a', encoding='UTF8') as fff:
             lwriter = csv.writer(fff)
             for any in to_save:
                 lwriter.writerow(any)
-
+    
     if rank == 0:
         logger.info("====> Epoch: {}".format(epoch))
 

@@ -10,6 +10,7 @@ import itertools
 import math
 import torch
 import tqdm
+import time
 from torch import nn, optim
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
@@ -18,6 +19,7 @@ import torch.multiprocessing as mp
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.cuda.amp import autocast, GradScaler
+
 
 import vits_core.commons as commons
 import utils
@@ -81,7 +83,7 @@ def run(rank, n_gpus, hps):
     collate_fn = TextAudioCollate()
     train_loader = DataLoader(
         train_dataset,
-        num_workers=2,
+        num_workers=0,
         shuffle=False,
         pin_memory=True,
         collate_fn=collate_fn,
@@ -91,7 +93,7 @@ def run(rank, n_gpus, hps):
         eval_dataset = TextAudioLoader(hps.data.validation_files, hps.data)
         eval_loader = DataLoader(
             eval_dataset,
-            num_workers=2,
+            num_workers=0,
             shuffle=False,
             batch_size=hps.train.batch_size,
             pin_memory=True,

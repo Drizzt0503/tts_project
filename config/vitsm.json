@@ -3,7 +3,7 @@
     "train_class": "vits_core.models.SynthesizerTrn_temp",
     "eval_class": "vits_core.models.SynthesizerEval_temp",
     "log_interval": 10,
-    "eval_interval": 20000,
+    "eval_interval": 10000,
     "seed": 1234,
     "epochs": 10000,
     "learning_rate": 1e-4,

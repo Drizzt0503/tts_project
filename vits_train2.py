@@ -21,13 +21,13 @@ import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.cuda.amp import autocast, GradScaler
 
-import vits_core.commons
+import vits_core.commons as commons
 import utils
 from data_utils import TextAudioLoader, TextAudioCollate, DistributedBucketSampler
 from vits_core.models import MultiPeriodDiscriminator
 from vits_core.losses import generator_loss, discriminator_loss, feature_loss, kl_loss
 from sound_processing.mel_processing import mel_spectrogram_torch, spec_to_mel_torch
-from text.symbols import symbols
+from text.phoneme_table import symbols
 import platform
 
 torch.backends.cudnn.benchmark = True
@@ -143,7 +143,6 @@ def run(rank, n_gpus, hps):
             logger.info("no teacher model.")
 
     net_d = DDP(net_d, device_ids=[rank])
-    """
     try:
         _, _, _, epoch_str = utils.load_checkpoint(
             utils.latest_checkpoint_path(hps.model_dir, "G_*.pth"), net_g, optim_g
@@ -159,9 +158,9 @@ def run(rank, n_gpus, hps):
     except:
         epoch_str = 1
         global_step = 0
-    """
-    utils.load_model('../model/G_BZN.pth', net_g)
-    utils.load_model('../model/D_BZN.pth', net_d)
+
+    #utils.load_model('../model/G_BZN.pth', net_g)
+    #utils.load_model('../model/D_BZN.pth', net_d)    
     epoch_str = 1
     global_step = 0
 
@@ -393,12 +392,11 @@ def train_and_evaluate(
             #        sys.exit(1)
             #    dmel=amel
             #    ddur=adur
-            if amel <=18.5 and adur <= 0.06 and epoch >=100:
-                utils.save_model(net_g,'../model/Vits/Vits.pth')
-                sys.exit(1)
-            if epoch ==hps.train.epochs:
-                utils.save_model(net_g,'../model/Vits/Vits.pth')
-            """
+            #if amel <=18.5 and adur <= 0.06 and epoch >=100:
+            #    utils.save_model(net_g,'../model/Vits/Vits.pth')
+            #    sys.exit(1)
+            #if epoch ==hps.train.epochs:
+            #    utils.save_model(net_g,'./temp/Vits/Vits.pth')
             if global_step % hps.train.eval_interval == 0:
                 evaluate(hps, net_g, eval_loader, writer_eval)
                 utils.save_checkpoint(
@@ -415,7 +413,7 @@ def train_and_evaluate(
                     epoch,
                     os.path.join(hps.model_dir, "D_{}.pth".format(global_step)),
                 )
-            """
+            
         global_step += 1
 
     if rank == 0:
