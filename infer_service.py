@@ -45,7 +45,7 @@ class TTS_Vits():
             #self.model = lib_dir + "/models/vits.pth"
             self.model = lib_dir + "/temp/gen/vits.pth"
         else:
-            self.model='/home/yuhang/tts_model/'+modelPath
+            self.model='/data2/yuhang/tts_model/'+modelPath
         utils.load_model(self.model, self.net_g)
         self.net_g.eval()
         self.net_g.to(device)
@@ -99,9 +99,9 @@ class TTS_VitsM():
             self.model = lib_dir + "/temp/gen/vits.pth"
             sid=torch.load(lib_dir+'/temp/gen/key.pt')
         else :
-            self.model='/home/yuhang/tts_model/'+modelPath
+            self.model='/data2/yuhang/tts_model/'+modelPath
             s_emb = modelPath.rstrip('.pth')+'_emb.pt'            
-            sid=  torch.load('/home/yuhang/tts_model/'+s_emb)  #dim(1,192)
+            sid=  torch.load('/data2/yuhang/tts_model/'+s_emb)  #dim(1,192)
         print(modelPath)            
         self.sid=torch.squeeze(sid,0)    #dim(192)
         utils.load_model(self.model, self.net_g)

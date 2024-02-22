@@ -230,10 +230,10 @@ if __name__ == '__main__':
     #---settings
     cwd = os.getcwd()
     main_dir = os.path.dirname(os.path.realpath(__file__))
-    rurl = 'http://106.104.151.145:22026/index.php/PostAiServer/CompleteVoiceModel/'
+    #rurl = 'http://106.104.151.145:22026/index.php/PostAiServer/CompleteVoiceModel/'
     #rurl = 'http://192.168.77.4:8080/index.php/PostAiServer/CompleteVoiceModel/'
     example_path = '/var/www/html/webuploader/tts_train_return/'
-    model_path = '/home/yuhang/tts_model/'
+    model_path = '/data2/yuhang/tts_model/'
     to_unzip = '/var/www/html/webuploader/uploadzip/'
     db_settings={
                 'host': '172.17.0.1',
@@ -286,6 +286,7 @@ if __name__ == '__main__':
     model_key = DB.get_usermodel_id(ajob)
     send_key=ajob[1]
     sendMsg = f"{send_key}/{model_key}"
+	rurl=ajob[11]
     getReturn(sendMsg,rurl)
 
     #===move files and reset environment
