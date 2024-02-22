@@ -200,6 +200,7 @@ VitsM模型名字為{user_model_id}.pth加上speaker embedding:{user_model_id}_e
 1. 目前model_type 1 for vits 2 for vitsm
 2. 可以停止訓練任務請求
 3. 回傳錯誤的狀態確認
+4. url現在在db,修改相對應的
 
 
 

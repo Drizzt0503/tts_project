@@ -236,7 +236,7 @@ if __name__ == '__main__':
     model_path = '/home/yuhang/tts_model/'
     to_unzip = '/var/www/html/webuploader/uploadzip/'
     db_settings={
-                'host': 'localhost',
+                'host': '172.17.0.1',
                 'user': 'root',
                 'password': '',
                 'db':'tts'
