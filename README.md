@@ -5,8 +5,26 @@
 
 ### 安裝
 
+
+
 1. 拉下預設docker image 並啟動
-2. git clone這個repo並執行install.sh
+
+'''
+sudo docker run --gpus all -it --name tts_test --shm-size 63G -v /data2/:/data2/ -v /var/www/html/webuploader/:/var/www/html/webuploader/ -v /mnt/share/AI_service/tts_service/:/mnt/share/ nvcr.io/nvidia/pytorch:23.10-py3
+'''
+
+2. git clone這個repo並
+
+'''
+git clone https://gitlab.com/drizztmon/tts_service.git
+'''
+
+3. 進入tts_service的資料夾,執行install
+
+'''
+cd tts_service
+sh install.sh
+'''
 
 ## TTS infer
 
