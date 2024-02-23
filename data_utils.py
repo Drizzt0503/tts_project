@@ -7,7 +7,7 @@ import torch.utils.data
 
 import vits_core.commons
 from utils import load_wav_to_torch, load_filepaths_and_text
-from text import cleaned_text_to_sequence
+from text import cleaned_text_to_sequence,cleaned_text_to_sequence_t
 
 
 class TextAudioLoader(torch.utils.data.Dataset):
@@ -78,9 +78,7 @@ class TextAudioLoader(torch.utils.data.Dataset):
 
 
     def get_text(self, text):
-        text_norm = cleaned_text_to_sequence(text)
-        if self.add_blank:
-            text_norm = commons.intersperse(text_norm, 0)
+        text_norm = cleaned_text_to_sequence_t(text)
         text_norm = torch.LongTensor(text_norm)
         return text_norm
 

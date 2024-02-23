@@ -27,7 +27,7 @@ from data_utils import TextAudioLoader, TextAudioCollate, DistributedBucketSampl
 from vits_core.models import MultiPeriodDiscriminator
 from vits_core.losses import generator_loss, discriminator_loss, feature_loss, kl_loss
 from sound_processing.mel_processing import mel_spectrogram_torch, spec_to_mel_torch
-from text.phoneme_table import symbols
+from text.phoneme_table import symbols,symbols_t
 import platform
 
 torch.backends.cudnn.benchmark = True
@@ -102,7 +102,7 @@ def run(rank, n_gpus, hps):
         )
 
     net_g = utils.load_class(hps.train.train_class)(
-        len(symbols),
+        len(symbols_t),
         hps.data.filter_length // 2 + 1,
         hps.train.segment_size // hps.data.hop_length,
         **hps.model,

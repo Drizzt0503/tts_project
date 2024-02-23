@@ -1,4 +1,4 @@
-from text.phoneme_table import symbols_c, symbols
+from text.phoneme_table import symbols_c, symbols,symbols_t
 
 
 # Mappings from symbol to numeric ID and vice versa:
@@ -198,7 +198,7 @@ class VITS_PinYin:
         return phone_items_str, char_embeds
 
 """ from https://github.com/keithito/tacotron """
-from text import cleaners
+#from text import cleaners
 
 
 # Mappings from symbol to numeric ID and vice versa:
@@ -250,3 +250,28 @@ def _clean_text(text, cleaner_names):
       raise Exception('Unknown cleaner: %s' % name)
     text = cleaner(text)
   return text
+
+# Mappings from symbol to numeric ID and vice versa:
+_symbol_to_id_t = {s: i for i, s in enumerate(symbols_t)}
+_id_to_symbol_t = {i: s for i, s in enumerate(symbols_t)}
+
+
+def cleaned_text_to_sequence_t(cleaned_text):
+    """Converts a string of text to a sequence of IDs corresponding to the symbols in the text.
+    Args:
+      text: string to convert to a sequence
+    Returns:
+      List of integers corresponding to the symbols in the text
+    """
+    sequence = [_symbol_to_id_t[symbol] for symbol in cleaned_text.split(' ')]
+    return sequence
+
+
+def sequence_to_text_t(sequence):
+    """Converts a sequence of IDs back to a string"""
+    result = ""
+    for symbol_id in sequence:
+        s = _id_to_symbol_t[symbol_id]
+        result += s
+    return result
+#=======================
