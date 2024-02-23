@@ -1,4 +1,4 @@
-from text.phoneme_table import symbols_c, symbols,symbols_t
+from text.phoneme_table import symbols_c, symbols,symbols_t,tailao_dic,_pause_t
 
 
 # Mappings from symbol to numeric ID and vice versa:
@@ -275,3 +275,35 @@ def sequence_to_text_t(sequence):
         result += s
     return result
 #=======================
+
+from 臺灣言語工具.解析整理.拆文分析器 import 拆文分析器
+from 臺灣言語工具.音標系統.閩南語.臺灣閩南語羅馬字拼音 import 臺灣閩南語羅馬字拼音
+
+def tailao_to_text(text):
+    titem = 拆文分析器.建立句物件(text)
+    ttext=titem.轉音(臺灣閩南語羅馬字拼音).看語句()
+    abc = ttext.replace('─',' split ')\
+        .replace('……',' split split')\
+        .replace('…',' split ')\
+        .replace(',',' split ')\
+        .replace('?',' split ')\
+        .replace('!',' split ')\
+        .replace(';',' split ')\
+        .replace(':',' split ')\
+        .replace('.',' split ')\
+        .replace('-',' conn ')
+    abc = abc.replace('   ',' ')\
+            .replace('  ',' ')
+    plist=abc.strip().split(' ')
+    p2list='sil '
+    for che in plist:
+        if che in _pause_t:
+            p2list+=che+' '
+        else:
+            if che[:-1] in tailao_dic:
+                a1,b1=tailao_dic[che[:-1]]
+                p2list+=a1+' '
+                p2list+=b1+che[-1]+' '
+    p2list+='sil'
+    return p2list
+
