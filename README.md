@@ -80,7 +80,7 @@ if __name__ == '__main__':
     text="零件費用產生，服務人員將另行報價，請問您接受嗎?"
     tts=vitsm("cuda",'/vits_model.pth') 
     rmsg = tts.infer('./hello.wav',text,1.0)
-	print(rmsg)
+    print(rmsg)
 ```
 
 
