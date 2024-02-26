@@ -15,7 +15,7 @@ sudo docker run --gpus all -it --name tts_test --shm-size 63G -v /data2/:/data2/
 2. git clone這個repo並
 
 ```
-git clone https://gitlab.com/drizztmon/tts_service.git
+git clone https://gitlab.com/drizztmon/tts_project.git
 ```
 
 3. 進入tts_service的資料夾,執行install
@@ -55,15 +55,16 @@ pace: 語速，浮點數。(1.0是正常 0.8較快 1.2較慢)
 2. 是否加上音量調整
 3. 文本正規化目前在Evan的code，應該補上對應method
 4. 回傳狀況的擴充
+5. readme補充模型路徑的描述
 
 
 ### model path example:  
 Vits: 
-b99084aeaa1411eeaf7b0011328a21bb(*commnuity_id*)/122(*user_id*)/43.pth(*user_model_id*)
+b99084aeaa1411eeaf7b0011328a21bb(*commnuity_id*)/122(*user_id*)/21.pth(*user_model_id*)
 
 VitsM:  
-b99084aeaa1411eeaf7b0011328a21bb/122/44.pth   
-b99084aeaa1411eeaf7b0011328a21bb/122/44_emb.pt
+b99084aeaa1411eeaf7b0011328a21bb/122/20.pth   
+b99084aeaa1411eeaf7b0011328a21bb/122/20_emb.pt
 
 
 
