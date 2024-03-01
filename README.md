@@ -101,11 +101,11 @@ if __name__ == '__main__':
 
 示範音檔文本: example_text.txt
 
-傳入壓縮檔路徑: f'/home/dataFile/uploadzip/{社區id}_{send_key}.zip'
+傳入壓縮檔路徑: f'/var/www/html/webuploader/uploadzip/{社區id}_{send_key}.zip'
 
-回傳示範音檔路徑: f'/home/dataFile/tts_train_return/{社區id}_{send_key}'
+回傳示範音檔路徑: f'/var/www/html/webuploader/tts_train_return/{社區id}_{send_key}'
 
-訓練完成模型路徑: f'/home/yuhang/tts_model/{社區id}/{user_id}/'
+訓練完成模型路徑: f'/data2/yuhang/tts_model/{社區id}/{user_id}/'
 
 回傳url: http://192.168.77.4:8080/index.php/PostAiServer/CompleteVoiceModel/
 
