@@ -165,6 +165,7 @@ class TTS_Task():
         os.system(f'rm {self.data_dir} -r')
         os.system('rm ./temp/vits -r')
         os.system('rm ./temp/filelists -r')
+        os.system('rm ./temp/speaker_emb.pt -r')
         print('finish')
 
 
