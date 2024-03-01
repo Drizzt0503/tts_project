@@ -287,7 +287,7 @@ if __name__ == '__main__':
     model_key = DB.get_usermodel_id(ajob)
     send_key=ajob[1]
     sendMsg = f"{send_key}/{model_key}"
-    rurl = f'http://{ajob[11]}/index.php/PostAiServer/CompleteVoiceModel/'
+    rurl = f'{ajob[11]}/index.php/PostAiServer/CompleteVoiceModel/'
     getReturn(sendMsg,rurl)
 
     #===move files and reset environment
