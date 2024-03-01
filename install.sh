@@ -6,6 +6,6 @@ pip uninstall Cython -y
 pip install -r requirements.txt
 cp /mnt/share/prosody_bert_model/ ./models/ -r
 cp /mnt/share/tts_ecapa_exp/* ./ecapa/exps/ -r
+cp /mnt/share/train_service_pretrained/*.pth ./models/ -r
 cd vits_core/monotonic_align
 python setup.py build_ext --inplace
-
