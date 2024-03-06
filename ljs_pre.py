@@ -165,7 +165,7 @@ if __name__ == "__main__":
         "-c",
         "--config",
         type=str,
-        default=lib_dir+"/config/vits.json",
+        default=lib_dir+"/config/vits_e.json",
         help="JSON file for configuration",
     )
     parser.add_argument(
