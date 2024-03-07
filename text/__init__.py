@@ -1,4 +1,4 @@
-from text.phoneme_table import symbols_c, symbols,symbols_t,tailao_dic,_pause_t
+from text.phoneme_table import symbols_c, symbols_e,symbols_t,tailao_dic,_pause_t
 
 
 # Mappings from symbol to numeric ID and vice versa:
@@ -202,11 +202,11 @@ class VITS_PinYin:
 
 
 # Mappings from symbol to numeric ID and vice versa:
-_symbol_to_id = {s: i for i, s in enumerate(symbols)}
-_id_to_symbol = {i: s for i, s in enumerate(symbols)}
+_symbol_to_id_e = {s: i for i, s in enumerate(symbols_e)}
+_id_to_symbol_e = {i: s for i, s in enumerate(symbols_e)}
 
 
-def text_to_sequence(text, cleaner_names):
+def text_to_sequence_e(text, cleaner_names):
   '''Converts a string of text to a sequence of IDs corresponding to the symbols in the text.
     Args:
       text: string to convert to a sequence
@@ -218,27 +218,27 @@ def text_to_sequence(text, cleaner_names):
 
   clean_text = _clean_text(text, cleaner_names)
   for symbol in clean_text:
-    symbol_id = _symbol_to_id[symbol]
+    symbol_id = _symbol_to_id_e[symbol]
     sequence += [symbol_id]
   return sequence
 
 
-def cleaned_text_to_sequence(cleaned_text):
+def cleaned_text_to_sequence_e(cleaned_text):
   '''Converts a string of text to a sequence of IDs corresponding to the symbols in the text.
     Args:
       text: string to convert to a sequence
     Returns:
       List of integers corresponding to the symbols in the text
   '''
-  sequence = [_symbol_to_id[symbol] for symbol in cleaned_text]
+  sequence = [_symbol_to_id_e[symbol] for symbol in cleaned_text]
   return sequence
 
 
-def sequence_to_text(sequence):
+def sequence_to_text_e(sequence):
   '''Converts a sequence of IDs back to a string'''
   result = ''
   for symbol_id in sequence:
-    s = _id_to_symbol[symbol_id]
+    s = _id_to_symbol_e[symbol_id]
     result += s
   return result
 

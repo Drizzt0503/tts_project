@@ -91,55 +91,45 @@ def pre_ljs(config):
     for item in scrips[:]:
         print(item, file=fout)
     fout.close()
-"""
+
+def pre_vctk(config):
+    hps = utils.get_hparams_from_file(config)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    ftext = open(tdir+"/vctk_text_r.txt", "r+", encoding='utf-8')
+    scrips = []
+    nn=1
+    while (True):
         try:
-            phone_index = 0
-            phone_items = []
-            phone_items.append('sil')
-            count_phone = []
-            count_phone.append(1)
-
-            pinyins = pinyins.split()
-            len_pys = len(pinyins)
-            for word in message:
-                if is_chinese(word):
-                    count_phone.append(2)
-                    if (phone_index >= len_pys):
-                        print(len_pys)
-                        print(phone_index)
-                    pinyin = pinyins[phone_index]
-                    phone_index = phone_index + 1
-                    if pinyin[:-1] in pinyin_dict:
-                        tone = pinyin[-1]
-                        a = pinyin[:-1]
-                        a1, a2 = pinyin_dict[a]
-                        phone_items += [a1, a2 + tone]
-                else:
-                    count_phone.append(1)
-                    phone_items.append('sp')
-            count_phone.append(1)
-            phone_items.append('sil')
-            phone_items_str = ' '.join(phone_items)
-            #log(f"\t{phone_items_str}")
-        except IndexError as e:
-            print(f"{fileidx}\t{message}")
-            print('except:', e)
-            continue
-
-        text = f'[PAD]{message}[PAD]'
-        #char_embeds = prosody.get_char_embeds(text)
-        print(fileidx)
-        #char_embeds = prosody.expand_for_phone(char_embeds, count_phone)
-        #char_embeds_path = lib_dir+f"/temp/train_set/berts/{fileidx}.npy"
-        #np.save(char_embeds_path, char_embeds, allow_pickle=False)
-
+            text_info = ftext.readline().strip()
+        except Exception as e:
+            print('nothing of except:', e)
+            break
+        if (text_info == None):
+            break
+        if (text_info == ""):
+            break
+        text_info_t = text_info.split("|")
+        fileidx = text_info_t[0]
+        text0 = text_info_t[1]
+        textn = text_info_t[2]
+        temp1 = text._clean_text(text0, ["english_cleaners2"])
+        #temp1 = text._clean_text(text0, ["english_cleaners2"])
+        #temp3 = text._clean_text(text0, ["english_cleaners"])
+        #temp4 = text._clean_text(textn, ["english_cleaners"])
+        #print(fileidx)
+        #print(text0)
+        #print(temp1)
+        #print(temp3)
+        #print('========================')
         wave_path = lib_dir+f"/temp/train_set/waves/{fileidx}.wav"
         spec_path = lib_dir+f"/temp/train_set/temps/{fileidx}.spec.pt"
         spec = get_spec(hps, wave_path)
         torch.save(spec, spec_path)
 
-        stemp=wave_path+'|'+spec_path+f'|{phone_items_str}'
+        stemp=wave_path+'|'+spec_path+f'|{temp1}'
         scrips.append(stemp)
+        print(nn)
+        nn+=1
     ftext.close()
 
     fout = open(lib_dir+f'/temp/filelists/all.txt', 'w', encoding='utf-8')
@@ -154,8 +144,6 @@ def pre_ljs(config):
     for item in scrips[:]:
         print(item, file=fout)
     fout.close()
-"""
-
 
 if __name__ == "__main__":
     #===here make train_set from default dataset
