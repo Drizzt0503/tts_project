@@ -5,15 +5,11 @@ import datetime
 import json
 import sys
 from opencc import OpenCC
+from torch.cuda import is_available
 
-def getReturn(sendMsg,url):
+def getReturn(sendMsg,url,status,msg):
     # 發送完成訊息
     import urllib.request as req
-    # GET
-    status = "0"
-    msg = "OK"
-    sendMsg = f"{sendMsg}/{status}/{msg}"
-    # /{id}/{modelkey}/{status}/{msg}
     print(url+sendMsg)
     with req.urlopen(url+sendMsg) as res:
         returnData = json.load(res)
@@ -116,7 +112,8 @@ class TTS_Task():
     def generate1(self,ex_path):
         cwd = os.getcwd()
         from infer_service import TTS_Vits as vits
-        tts = vits("cuda",None)
+        device = "cuda" if is_available() else "cpu"
+        tts = vits(device,None)
         fo = open("./example_text.txt", "r+", encoding='utf-8')
         texts = fo.readlines()
         fo.close()
@@ -133,7 +130,8 @@ class TTS_Task():
     def generate2(self,ex_path):
         cwd = os.getcwd()
         from infer_service import TTS_VitsM as vitsm
-        tts = vitsm("cuda",None)
+        device = "cuda" if is_available() else "cpu"
+        tts = vitsm(device,None)
         fo = open("./example_text.txt", "r+", encoding='utf-8')
         texts = fo.readlines()
         fo.close()
@@ -222,6 +220,13 @@ class DB_interact():
         self.cursor.execute(command,(db_job[1],db_job[2],db_job[3],db_job[5]))
         model_data = self.cursor.fetchone()
         return model_data[0]
+    def error_report(self,db_job,text):
+        now = datetime.datetime.now()
+        command = "UPDATE train_request SET train_request.msg=%s, train_request.generated=%s,\
+                   update_time = %s WHERE train_request.id=%s"
+        self.cursor.execute(command,(text,True,str(now),db_job[0]))
+        self.connect.commit()
+
         
 
 
@@ -256,6 +261,9 @@ if __name__ == '__main__':
         print(ajob)
         mtype = ajob[5]
         print('model_type=',mtype)
+        os.system(f'rm {main_dir}/temp/* -r')
+        send_key=ajob[1]
+        rurl = f'{ajob[11]}/index.php/PostAiServer/CompleteVoiceModel/'
 
     #===prepare dataset
     template = DB.make_template(ajob[4])
@@ -269,14 +277,28 @@ if __name__ == '__main__':
     if mtype == 2:
         task.train2()
         os.system(f'cp ./temp/train_set/embed/{to_memo} ./temp/gen/key.pt')
+    path =main_dir+'/temp/gen/train_fin'
+    if os.path.exists(path):
+        pass
+    else:
+        DB.error_report(ajob,'training not correctly finished')
+        sendMsg = f"{send_key}/1/train_not_finished"
+        getReturn(sendMsg,rurl)
+        sys.exit(0)
+
 
     #===generate example wave files
     example_path = example_path+f'{ajob[2]}_{str(ajob[1])}/'
     os.makedirs(example_path, exist_ok=True)
-    if mtype == 1:
-        task.generate1(example_path)
-    if mtype == 2:
-        task.generate2(example_path)
+    try:
+        if mtype == 1:
+            task.generate1(example_path)
+        if mtype == 2:
+            task.generate2(example_path)
+    except:
+        DB.error_report(ajob,'generate example waves failed')
+        sendMsg = f"{send_key}/1/generate_example_failed"
+        getReturn(sendMsg,rurl)
 
     #=== update user_model and train_request in DB
     DB.rollback()
@@ -284,9 +306,7 @@ if __name__ == '__main__':
 
     #===get model id and return to php
     model_key = DB.get_usermodel_id(ajob)
-    send_key=ajob[1]
-    sendMsg = f"{send_key}/{model_key}"
-    rurl = f'{ajob[11]}/index.php/PostAiServer/CompleteVoiceModel/'
+    sendMsg = f"{send_key}/{model_key}/0/ok"
     getReturn(sendMsg,rurl)
 
     #===move files and reset environment

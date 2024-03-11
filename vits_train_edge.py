@@ -417,3 +417,7 @@ def train_and_evaluate(
 
 if __name__ == "__main__":
     main()
+    ff = open('./temp/gen/train_fin', 'wt')
+    ff.write('done')
+    ff.close()
+
