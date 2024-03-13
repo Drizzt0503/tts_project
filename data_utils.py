@@ -299,24 +299,23 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
 
         audiopaths_and_text_new = []
         lengths = []
-        for audiopath, spec, bert, text,sid in self.audiopaths_and_text:
+        for audiopath, spec, text,sid in self.audiopaths_and_text:
             length = len(text.split())
             if self.min_text_len <= length and length <= self.max_text_len:
-                audiopaths_and_text_new.append([audiopath, spec, bert, text,sid])
+                audiopaths_and_text_new.append([audiopath, spec, text,sid])
                 lengths.append(os.path.getsize(audiopath) // (2 * self.hop_length))
         self.audiopaths_and_text = audiopaths_and_text_new
         self.lengths = lengths
 
     def get_audio_text_pair(self, audiopath_and_text):
         # separate filename and text
-        audiopath, spec,sid = audiopath_and_text[0], audiopath_and_text[1], audiopath_and_text[4]
-        bert, text = audiopath_and_text[2], audiopath_and_text[3]
+        audiopath, spec,sid = audiopath_and_text[0], audiopath_and_text[1], audiopath_and_text[3]
+        text = audiopath_and_text[2]
         wave = self.get_audio(audiopath)
         spec = torch.load(spec)
         text = self.get_text(text)
-        bert = self.get_bert(bert)
         sid=self.get_sid(sid)
-        return (spec, wave, text, bert, sid)
+        return (spec, wave, text, sid)
 
     def get_audio(self, filename):
         audio, sampling_rate = load_wav_to_torch(filename)
@@ -330,14 +329,9 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
         audio_norm = audio_norm.unsqueeze(0)
         return audio_norm
 
-    def get_bert(self, bert):
-        bert_embed = np.load(bert)
-        bert_embed = bert_embed.astype(np.float32)
-        bert_embed = torch.FloatTensor(bert_embed)
-        return bert_embed
 
     def get_text(self, text):
-        text_norm = cleaned_text_to_sequence(text)
+        text_norm = cleaned_text_to_sequence(text.strip())
         if self.add_blank:
             text_norm = commons.intersperse(text_norm, 0)
         text_norm = torch.LongTensor(text_norm)
@@ -379,7 +373,6 @@ class TextAudioSpeakerCollate():
         max_spec_len = max([x[0].size(1) for x in batch])
         max_wav_len = max([x[1].size(1) for x in batch])
         max_text_len = max([len(x[2]) for x in batch])
-        max_bert_len = max([len(x[3]) for x in batch])
 
         spec_lengths = torch.LongTensor(len(batch))
         wav_lengths = torch.LongTensor(len(batch))
@@ -387,15 +380,13 @@ class TextAudioSpeakerCollate():
 
         spec_padded = torch.FloatTensor(len(batch), batch[0][0].size(0), max_spec_len)
         wav_padded = torch.FloatTensor(len(batch), 1, max_wav_len)
-        text_padded = torch.LongTensor(len(batch), max_bert_len)
+        text_padded = torch.LongTensor(len(batch), max_text_len)
         # bert_padded = torch.FloatTensor(len(batch), max_text_len, 256)
-        bert_padded = torch.FloatTensor(len(batch), max_bert_len, 256)
         sid = torch.FloatTensor(len(batch),192)
 
         spec_padded.zero_()
         wav_padded.zero_()
         text_padded.zero_()
-        bert_padded.zero_()
         for i in range(len(ids_sorted_decreasing)):
             row = batch[ids_sorted_decreasing[i]]
 
@@ -411,11 +402,8 @@ class TextAudioSpeakerCollate():
             text_padded[i, :text.size(0)] = text
             text_lengths[i] = text.size(0)
 
-            bert = row[3]
-            bert_padded[i, :bert.size(0), :] = bert
-
-            sid[i] = row[4]
+            sid[i] = row[3]
 
         if self.return_ids:
-            return text_padded, text_lengths, bert_padded, spec_padded, spec_lengths, wav_padded, wav_lengths, sid, ids_sorted_decreasing
-        return text_padded, text_lengths, bert_padded, spec_padded, spec_lengths, wav_padded, wav_lengths, sid
+            return text_padded, text_lengths, spec_padded, spec_lengths, wav_padded, wav_lengths, sid, ids_sorted_decreasing
+        return text_padded, text_lengths, spec_padded, spec_lengths, wav_padded, wav_lengths, sid

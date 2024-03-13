@@ -1335,16 +1335,17 @@ class SynthesizerTrn_no_bert(nn.Module):
         self.dp = DurationPredictor(
             hidden_channels, 256, 3, 0.5, gin_channels=gin_channels
         )
-        if n_speakers > 1:
-            self.emb_g = nn.Embedding(n_speakers, gin_channels)
+        #if n_speakers > 1:
+        #    self.emb_g = nn.Embedding(n_speakers, gin_channels)
 
     def forward(self, x, x_lengths, y, y_lengths, sid=None):
         x, m_p, logs_p, x_mask = self.enc_p(x, x_lengths)
-        if self.n_speakers > 0:
-            g = self.emb_g(sid).unsqueeze(-1)  # [b, h, 1]
-        else:
-            g = None
+        #if self.n_speakers > 0:
+        #    g = self.emb_g(sid).unsqueeze(-1)  # [b, h, 1]
+        #else:
+        #    g = None
 
+        g = sid.unsqueeze(-1)  # [b, h, 1]
         z, m_q, logs_q, y_mask = self.enc_q(y, y_lengths, g=g)
         z_p = self.flow(z, y_mask, g=g)
 
@@ -1380,7 +1381,6 @@ class SynthesizerTrn_no_bert(nn.Module):
         # expand prior
         m_p = torch.matmul(attn.squeeze(1), m_p.transpose(1, 2)).transpose(1, 2)
         logs_p = torch.matmul(attn.squeeze(1), logs_p.transpose(1, 2)).transpose(1, 2)
-
         z_slice, ids_slice = commons.rand_slice_segments(
             z, y_lengths, self.segment_size
         )
@@ -1393,10 +1393,11 @@ class SynthesizerTrn_no_bert(nn.Module):
 
     def infer(self, x, x_lengths, sid=None, noise_scale=1, length_scale=1 ,max_len=None):
         x, m_p, logs_p, x_mask = self.enc_p(x, x_lengths)
-        if self.n_speakers > 0:
-            g = self.emb_g(sid).unsqueeze(-1)  # [b, h, 1]
-        else:
-            g = None
+        #if self.n_speakers > 0:
+        #    g = self.emb_g(sid).unsqueeze(-1)  # [b, h, 1]
+        #else:
+        #    g = None
+        g = sid.unsqueeze(-1)  # [b, h, 1]
         logw = self.dp(x, x_mask, g=g)
         w = torch.exp(logw) * x_mask * length_scale
         w_ceil = torch.ceil(w)
@@ -1494,8 +1495,8 @@ class SynthesizerEval_no_bert(nn.Module):
         self.dp = DurationPredictor(
             hidden_channels, 256, 3, 0.5, gin_channels=gin_channels
         )
-        if n_speakers > 1:
-            self.emb_g = nn.Embedding(n_speakers, gin_channels)
+        #if n_speakers > 1:
+        #    self.emb_g = nn.Embedding(n_speakers, gin_channels)
 
     def remove_weight_norm(self):
         print("Removing weight norm...")
@@ -1504,10 +1505,11 @@ class SynthesizerEval_no_bert(nn.Module):
 
     def infer(self, x, x_lengths, sid=None, noise_scale=1, length_scale=1 ,max_len=None):
         x, m_p, logs_p, x_mask = self.enc_p(x, x_lengths)
-        if self.n_speakers > 0:
-            g = self.emb_g(sid).unsqueeze(-1)  # [b, h, 1]
-        else:
-            g = None
+        #if self.n_speakers > 0:
+        #    g = self.emb_g(sid).unsqueeze(-1)  # [b, h, 1]
+        #else:
+        #    g = None
+        g = sid.unsqueeze(-1)  # [b, h, 1]
         logw = self.dp(x, x_mask, g=g)
         w = torch.exp(logw) * x_mask * length_scale
         w_ceil = torch.ceil(w)

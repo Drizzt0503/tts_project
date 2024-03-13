@@ -8,8 +8,6 @@ from prosody_bert import TTSProsody
 from prosody_bert.prosody_tool import is_chinese, pinyin_dict
 from utils import load_wav_to_torch
 from sound_processing.mel_processing import spectrogram_torch
-import text
-from text.phoneme_table import tailao_dic, _pause_t
 
 lib_dir = os.path.dirname(os.path.realpath(__file__))
 tdir=lib_dir+'/temp/train_set'
@@ -17,45 +15,13 @@ fdir=lib_dir+'/temp/filelists'
 os.makedirs(tdir,exist_ok=True)
 os.makedirs(fdir,exist_ok=True)
 os.makedirs(tdir+"/waves", exist_ok=True)
+os.makedirs(tdir+"/berts", exist_ok=True)
 os.makedirs(tdir+"/temps", exist_ok=True)
 
 
-def get_phon(text3):
-    to_save=0
-    plist=text3.strip().split(' ')
-    for che in plist:
-        if che in _pause_t:
-            pass
-        else:
-            if che[:-1] in tailao_dic:
-                pass
-            else:
-                to_save=1
-                print(text3)
-                print(che)
-                print(plist)
-                print('==============')
-    if to_save == 0:
-        p2=text3.strip().split()
-        p3=[]
-        for pho in p2:
-            if pho in _pause_t:
-                p3.append(pho+'_t')
-            elif pho[:-1] in tailao_dic:
-                a1,b1 = tailao_dic[pho[:-1]]
-                p3.append(a1+'_t')
-                p3.append(b1+pho[-1]+'_t')
-            else:
-                print('not in dic')
-        p_str='sil_t '
-        for ppho in p3:
-            p_str+= ppho+ ' '
-        p_str += 'sil_t'
-        return p_str
-    else:
-        return False
-
-
+def log(info: str):
+    with open(ddir+'/prepare.log', "a", encoding='utf-8') as flog:
+        print(info, file=flog)
 
 
 def get_spec(hps, filename):
@@ -75,13 +41,49 @@ def get_spec(hps, filename):
     return spec
 
 
+def bzn_to_temp():
+    #check if BZNSYP exist?
+    ddir=lib_dir+'/dataset/BZNSYP'
+    #move .wav to train_set with ffmpeg
+    wavs= os.listdir(ddir+'/waves')
+    for wav in wavs:
+        wpath=ddir+'/waves/'+wav
+        w2path=tdir+'/waves/'+wav
+        cmd =f'ffmpeg -y -i {wpath} -acodec pcm_s16le -ac 1 -ar 16000 {w2path}'
+        os.system(cmd)
+    to_text=[]
+    with open(ddir+'/000001-010000.txt','rt') as ftext:
+        while (True):
+            try:
+                message = ftext.readline().strip()
+                pinyins = ftext.readline().strip()
+            except Exception as e:
+                print('nothing of except:', e)
+                break
+            if (message == None):
+                break
+            if (message == ""):
+                break
+            infosub = message.split("\t")
+            fileidx = infosub[0]
+            message = infosub[1]
+            message = message.replace("#1", "")
+            message = message.replace("#2", "")
+            message = message.replace("#3", "")
+            message = message.replace("#4", "")
+            to_text.append(fileidx+'|'+message+'|'+pinyins)
+    with open(tdir+'/text_info.txt','wt') as wtext:
+        for any in to_text:
+            wtext.write(any+'\n')
 
-def pre_suisiann(config):
+
+def pre_vitsm_no_bert(config):
     hps = utils.get_hparams_from_file(config)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    ftext = open(tdir+"/suisiann_text_r.txt", "r+", encoding='utf-8')
+    prosody = TTSProsody(lib_dir+"/models/prosody_bert_model", device)
+
+    ftext = open(tdir+"/ai3_text_r.txt", "r+", encoding='utf-8')
     scrips = []
-    nn=1
     while (True):
         try:
             text_info = ftext.readline().strip()
@@ -93,59 +95,13 @@ def pre_suisiann(config):
         if (text_info == ""):
             break
         text_info_t = text_info.split("|")
+
         fileidx = text_info_t[0][:-4]
-        text0 = text_info_t[1]
-        textn = text_info_t[2]
-        abc = textn.replace('─',' split ')\
-            .replace('……',' split split')\
-            .replace('…',' split ')\
-            .replace(',',' split ')\
-            .replace('?',' split ')\
-            .replace('!',' split ')\
-            .replace(';',' split ')\
-            .replace(':',' split ')\
-            .replace('.',' split ')\
-            .replace('-',' conn ')
-        abc = abc.replace('   ',' ')\
-            .replace('  ',' ')
-        #print(abc)
-        bbc =get_phon(abc)
-        #print('======================')
-        #print(bbc)
-        #print('======================')
-        #temp1 = text._clean_text(text0, ["english_cleaners2"])
-        #temp3 = text._clean_text(text0, ["english_cleaners"])
-        #temp4 = text._clean_text(textn, ["english_cleaners"])
-        #print(fileidx)
-        #print(text0)
-        #print(temp1)
-        #print(temp3)
-        #print('========================')
-        wave_path = lib_dir+f"/temp/train_set/waves/{fileidx}.wav"
-        spec_path = lib_dir+f"/temp/train_set/temps/{fileidx}.spec.pt"
-        sp_emb_path = lib_dir+f"/temp/train_set/embed/{fileidx}.pt"
-        spec = get_spec(hps, wave_path)
-        torch.save(spec, spec_path)
+        message = text_info_t[2]
+        #message = message.replace("#3", "")
+        pinyins = text_info_t[1]
+        #print(message)
 
-        stemp=f"{wave_path}|{spec_path}|{bbc}|{sp_emb_path}"
-        scrips.append(stemp)
-        #print(nn)
-        nn+=1
-    ftext.close()
-
-    fout = open(lib_dir+f'/temp/filelists/all_t.txt', 'w', encoding='utf-8')
-    for item in scrips:
-        print(item, file=fout)
-    fout.close()
-    fout = open(lib_dir+f'/temp/filelists/valid_t.txt', 'w', encoding='utf-8')
-    for item in scrips[:1]:
-        print(item, file=fout)
-    fout.close()
-    fout = open(lib_dir+f'/temp/filelists/train_t.txt', 'w', encoding='utf-8')
-    for item in scrips[:]:
-        print(item, file=fout)
-    fout.close()
-"""
         try:
             phone_index = 0
             phone_items = []
@@ -181,34 +137,43 @@ def pre_suisiann(config):
             continue
 
         text = f'[PAD]{message}[PAD]'
-        #char_embeds = prosody.get_char_embeds(text)
+        char_embeds = prosody.get_char_embeds(text)
         print(fileidx)
-        #char_embeds = prosody.expand_for_phone(char_embeds, count_phone)
-        #char_embeds_path = lib_dir+f"/temp/train_set/berts/{fileidx}.npy"
-        #np.save(char_embeds_path, char_embeds, allow_pickle=False)
+        char_embeds = prosody.expand_for_phone(char_embeds, count_phone)
+        char_embeds_path = lib_dir+f"/temp/train_set/berts/{fileidx}.npy"
+        np.save(char_embeds_path, char_embeds, allow_pickle=False)
 
         wave_path = lib_dir+f"/temp/train_set/waves/{fileidx}.wav"
         spec_path = lib_dir+f"/temp/train_set/temps/{fileidx}.spec.pt"
+        sp_emb_path = lib_dir+f"/temp/train_set/embed/{fileidx}.pt"
         spec = get_spec(hps, wave_path)
         torch.save(spec, spec_path)
-
-        stemp=wave_path+'|'+spec_path+f'|{phone_items_str}'
+        plist=phone_items_str.split()
+        pi_str2=''
+        for any in plist:
+            pi_str2+=any+'_c '
+        stemp=f"{wave_path}|{spec_path}|{pi_str2}|{sp_emb_path}"
         scrips.append(stemp)
     ftext.close()
 
-    fout = open(lib_dir+f'/temp/filelists/all.txt', 'w', encoding='utf-8')
+    fout = open(lib_dir+f'/temp/filelists/all_c.txt', 'w', encoding='utf-8')
     for item in scrips:
         print(item, file=fout)
     fout.close()
-    fout = open(lib_dir+f'/temp/filelists/valid.txt', 'w', encoding='utf-8')
+    fout = open(lib_dir+f'/temp/filelists/valid_c.txt', 'w', encoding='utf-8')
     for item in scrips[:1]:
         print(item, file=fout)
     fout.close()
-    fout = open(lib_dir+f'/temp/filelists/train.txt', 'w', encoding='utf-8')
+    fout = open(lib_dir+f'/temp/filelists/train_c.txt', 'w', encoding='utf-8')
     for item in scrips[:]:
         print(item, file=fout)
     fout.close()
-"""
+
+    #os.makedirs(tdir+"/embed", exist_ok=True)
+    #cwd =os.getcwd()
+    #os.chdir(lib_dir+'/ecapa')
+    #os.system('python evalECAPA.py --register')
+    #os.chdir(cwd)
 
 
 if __name__ == "__main__":
@@ -233,7 +198,7 @@ if __name__ == "__main__":
         "-m",
         "--method",
         type=str,
-        default="suisiann",
+        default="vitsm_no_bert",
         help="If use some default dataset",
     )
     args = parser.parse_args()
@@ -241,5 +206,10 @@ if __name__ == "__main__":
         bzn_to_temp()
     else:
         pass
-    if args.method =='suisiann':
-        pre_suisiann(args.config)
+    if args.method =='vits':
+        pre_vits(args.config)
+    elif args.method =='vitsm_no_bert':
+        pre_vitsm_no_bert(args.config)
+    else:
+        print('not supported method')
+

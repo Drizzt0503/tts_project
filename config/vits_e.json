@@ -31,7 +31,7 @@
     "mel_fmin": 0.0,
     "mel_fmax": null,
     "add_blank": true,
-    "n_speakers": 0
+    "n_speakers": 0,
     "cleaned_text": true
   },
   "model": {
@@ -49,7 +49,7 @@
     "upsample_initial_channel": 512,
     "upsample_kernel_sizes": [16,16,4,4],
     "n_layers_q": 3,
-    "use_spectral_norm": false
+    "use_spectral_norm": false,
     "use_sdp": false
   }
 }
