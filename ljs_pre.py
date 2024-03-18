@@ -136,8 +136,14 @@ def pre_vctk(config):
         sp_emb_path = lib_dir+f"/temp/train_set/embed/{fileidx}.pt"
         spec = get_spec(hps, wave_path)
         torch.save(spec, spec_path)
+        plist=p_str.split(' ')
+        lan_emb = [0]*len(plist)
+        lan_str=''
+        for b in lan_emb:
+            lan_str+=str(b)+' '
+        lan_str=lan_str.strip()
+        stemp=f"{wave_path}|{spec_path}|{p_str}|{sp_emb_path}|{lan_str}|0"
 
-        stemp=f"{wave_path}|{spec_path}|{p_str}|{sp_emb_path}"
         #stemp=wave_path+'|'+spec_path+f'|{temp1}'
         scrips.append(stemp)
         print(nn)
@@ -171,7 +177,7 @@ if __name__ == "__main__":
         "-c",
         "--config",
         type=str,
-        default=lib_dir+"/config/vits_e.json",
+        default=lib_dir+"/config/vits_multi.json",
         help="JSON file for configuration",
     )
     parser.add_argument(

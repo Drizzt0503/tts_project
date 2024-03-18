@@ -126,8 +126,15 @@ def pre_suisiann(config):
         sp_emb_path = lib_dir+f"/temp/train_set/embed/{fileidx}.pt"
         spec = get_spec(hps, wave_path)
         torch.save(spec, spec_path)
+        plist=bbc.split(' ')
+        lan_emb = [2]*len(plist)
+        lan_str=''
+        for b in lan_emb:
+            lan_str+=str(b)+' '
+        lan_str=lan_str.strip()
+        stemp=f"{wave_path}|{spec_path}|{bbc}|{sp_emb_path}|{lan_str}|2"
 
-        stemp=f"{wave_path}|{spec_path}|{bbc}|{sp_emb_path}"
+        #stemp=f"{wave_path}|{spec_path}|{bbc}|{sp_emb_path}"
         scrips.append(stemp)
         #print(nn)
         nn+=1
@@ -219,7 +226,7 @@ if __name__ == "__main__":
         "-c",
         "--config",
         type=str,
-        default=lib_dir+"/config/vits.json",
+        default=lib_dir+"/config/vits_multi.json",
         help="JSON file for configuration",
     )
     parser.add_argument(

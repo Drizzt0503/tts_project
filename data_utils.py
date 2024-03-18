@@ -299,10 +299,10 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
 
         audiopaths_and_text_new = []
         lengths = []
-        for audiopath, spec, text,sid in self.audiopaths_and_text:
+        for audiopath, spec, text,sid,lid,b_lid in self.audiopaths_and_text:
             length = len(text.split())
             if self.min_text_len <= length and length <= self.max_text_len:
-                audiopaths_and_text_new.append([audiopath, spec, text,sid])
+                audiopaths_and_text_new.append([audiopath, spec, text,sid,lid,b_lid])
                 lengths.append(os.path.getsize(audiopath) // (2 * self.hop_length))
         self.audiopaths_and_text = audiopaths_and_text_new
         self.lengths = lengths
@@ -310,12 +310,14 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
     def get_audio_text_pair(self, audiopath_and_text):
         # separate filename and text
         audiopath, spec,sid = audiopath_and_text[0], audiopath_and_text[1], audiopath_and_text[3]
-        text = audiopath_and_text[2]
+        text,lid,b_lid = audiopath_and_text[2],audiopath_and_text[4],audiopath_and_text[5]
         wave = self.get_audio(audiopath)
         spec = torch.load(spec)
         text = self.get_text(text)
         sid=self.get_sid(sid)
-        return (spec, wave, text, sid)
+        lid=self.get_lid(lid)
+        b_lid=self.get_b_lid(b_lid)
+        return (spec, wave, text, sid,lid,b_lid)
 
     def get_audio(self, filename):
         audio, sampling_rate = load_wav_to_torch(filename)
@@ -337,6 +339,11 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
         text_norm = torch.LongTensor(text_norm)
         return text_norm
 
+    def get_lid(self, lid):
+        llist = lid.strip().split(' ')
+        llist = torch.LongTensor([int(x) for x in llist])
+        return llist
+
     def get_sid(self,sid):
        	sid=  torch.load(sid)
         sid=torch.squeeze(sid,0)
@@ -344,6 +351,10 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
         #sid=torch.FloatTensor(sid)
         #print(sid.shape,type(sid))
         return sid
+
+    def get_b_lid(self, b_lid):
+        lid = torch.LongTensor([int(b_lid)])
+        return lid
 
     def __getitem__(self, index):
         return self.get_audio_text_pair(self.audiopaths_and_text[index])
@@ -373,20 +384,25 @@ class TextAudioSpeakerCollate():
         max_spec_len = max([x[0].size(1) for x in batch])
         max_wav_len = max([x[1].size(1) for x in batch])
         max_text_len = max([len(x[2]) for x in batch])
+        max_lid_len = max([len(x[4]) for x in batch])
 
         spec_lengths = torch.LongTensor(len(batch))
         wav_lengths = torch.LongTensor(len(batch))
         text_lengths = torch.LongTensor(len(batch))
+        lid_lengths = torch.LongTensor(len(batch))
 
         spec_padded = torch.FloatTensor(len(batch), batch[0][0].size(0), max_spec_len)
         wav_padded = torch.FloatTensor(len(batch), 1, max_wav_len)
         text_padded = torch.LongTensor(len(batch), max_text_len)
+        lid_padded = torch.LongTensor(len(batch), max_lid_len)
         # bert_padded = torch.FloatTensor(len(batch), max_text_len, 256)
         sid = torch.FloatTensor(len(batch),192)
+        b_lid = torch.LongTensor(len(batch))
 
         spec_padded.zero_()
         wav_padded.zero_()
         text_padded.zero_()
+        lid_padded.zero_()
         for i in range(len(ids_sorted_decreasing)):
             row = batch[ids_sorted_decreasing[i]]
 
@@ -404,6 +420,12 @@ class TextAudioSpeakerCollate():
 
             sid[i] = row[3]
 
+            lid = row[4]
+            lid_padded[i, :lid.size(0)] = lid
+            lid_lengths[i] = lid.size(0)
+
+            b_lid[i] = row[5]
+
         if self.return_ids:
-            return text_padded, text_lengths, spec_padded, spec_lengths, wav_padded, wav_lengths, sid, ids_sorted_decreasing
-        return text_padded, text_lengths, spec_padded, spec_lengths, wav_padded, wav_lengths, sid
+            return text_padded, text_lengths, spec_padded, spec_lengths, wav_padded, wav_lengths, sid, lid_padded,lid_lengths,b_lid,ids_sorted_decreasing
+        return text_padded, text_lengths, spec_padded, spec_lengths, wav_padded, wav_lengths, sid,lid_padded,lid_lengths,b_lid

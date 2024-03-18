@@ -149,10 +149,15 @@ def pre_vitsm_no_bert(config):
         spec = get_spec(hps, wave_path)
         torch.save(spec, spec_path)
         plist=phone_items_str.split()
+        lan_emb = [1]*len(plist)
         pi_str2=''
-        for any in plist:
+        lan_str=''
+        for any,b in zip(plist,lan_emb):
             pi_str2+=any+'_c '
-        stemp=f"{wave_path}|{spec_path}|{pi_str2}|{sp_emb_path}"
+            lan_str+=str(b)+' '
+        pi_str2=pi_str2.strip()
+        lan_str=lan_str.strip()
+        stemp=f"{wave_path}|{spec_path}|{pi_str2}|{sp_emb_path}|{lan_str}|1"
         scrips.append(stemp)
     ftext.close()
 
@@ -184,7 +189,7 @@ if __name__ == "__main__":
         "-c",
         "--config",
         type=str,
-        default=lib_dir+"/config/vits.json",
+        default=lib_dir+"/config/vits_multi.json",
         help="JSON file for configuration",
     )
     parser.add_argument(
