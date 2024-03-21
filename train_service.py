@@ -62,7 +62,7 @@ class TTS_Task():
         #not using abs path here, need to be modified
         cwd = os.getcwd()
         os.chdir(task.data_dir+'/owaves')
-        cmd ='for f in *.wav; do ffmpeg -y -i "$f" -acodec pcm_s16le -ac 1 -ar 16000 "../waves/$f"; done'
+        cmd ='for f in *.wav; do ffmpeg -loglevel error -y -i "$f" -acodec pcm_s16le -ac 1 -ar 16000 "../waves/$f"; done'
         os.system(cmd)
         os.chdir(cwd)
         print('finished make dataset')
@@ -123,7 +123,7 @@ class TTS_Task():
             for speed in pace_list:
                 tts.infer(f'./temp/gen/{str(speed)}_{str(i+1)}.wav',txt, speed/10.0)
         os.chdir(self.gen_dir)
-        cmd ='for f in *.wav; do ffmpeg -y -i "$f" -vn -ar 16000 -ac 1  "'+ex_path+'/${f%.wav}.mp3"; done'
+        cmd ='for f in *.wav; do ffmpeg -loglevel error -y -i "$f" -vn -ar 16000 -ac 1  "'+ex_path+'/${f%.wav}.mp3"; done'
         os.system(cmd)
         os.chdir(cwd)
 
@@ -141,7 +141,7 @@ class TTS_Task():
             for speed in pace_list:
                 tts.infer(f'./temp/gen/{str(speed)}_{str(i+1)}.wav',txt, speed/10.0)
         os.chdir(self.gen_dir)
-        cmd ='for f in *.wav; do ffmpeg -y -i "$f" -vn -ar 16000 -ac 1  "'+ex_path+'/${f%.wav}.mp3"; done'
+        cmd ='for f in *.wav; do ffmpeg -loglevel error -y -i "$f" -vn -ar 16000 -ac 1  "'+ex_path+'/${f%.wav}.mp3"; done'
         os.system(cmd)
         os.chdir(cwd)
 
