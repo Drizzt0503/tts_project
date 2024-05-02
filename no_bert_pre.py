@@ -180,6 +180,109 @@ def pre_vitsm_no_bert(config):
     #os.system('python evalECAPA.py --register')
     #os.chdir(cwd)
 
+def pre_vitsm_josh(config):
+    hps = utils.get_hparams_from_file(config)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    prosody = TTSProsody(lib_dir+"/models/prosody_bert_model", device)
+
+    ftext = open(tdir+"/000001-010000.txt", "r+", encoding='utf-8')
+    scrips = []
+    while (True):
+        try:
+            text_info = ftext.readline().strip()
+            phoneme_info = ftext.readline().strip()
+        except Exception as e:
+            print('nothing of except:', e)
+            break
+        if (text_info == None):
+            break
+        if (text_info == ""):
+            break
+        text_info_t = text_info.split("\t")
+
+        fileidx = text_info_t[0]
+        message = text_info_t[1]
+        #message = message.replace("#3", "")
+        pinyins = phoneme_info
+        #print(message)
+
+        try:
+            phone_index = 0
+            phone_items = []
+            phone_items.append('sil')
+            count_phone = []
+            count_phone.append(1)
+
+            pinyins = pinyins.split()
+            len_pys = len(pinyins)
+            for word in message:
+                if is_chinese(word):
+                    count_phone.append(2)
+                    if (phone_index >= len_pys):
+                        print(len_pys)
+                        print(phone_index)
+                    pinyin = pinyins[phone_index]
+                    phone_index = phone_index + 1
+                    if pinyin[:-1] in pinyin_dict:
+                        tone = pinyin[-1]
+                        a = pinyin[:-1]
+                        a1, a2 = pinyin_dict[a]
+                        phone_items += [a1, a2 + tone]
+                else:
+                    count_phone.append(1)
+                    phone_items.append('sp')
+            count_phone.append(1)
+            phone_items.append('sil')
+            phone_items_str = ' '.join(phone_items)
+            #log(f"\t{phone_items_str}")
+        except IndexError as e:
+            print(f"{fileidx}\t{message}")
+            print('except:', e)
+            continue
+
+        text = f'[PAD]{message}[PAD]'
+        char_embeds = prosody.get_char_embeds(text)
+        print(fileidx)
+        char_embeds = prosody.expand_for_phone(char_embeds, count_phone)
+        char_embeds_path = lib_dir+f"/temp/train_set/berts/{fileidx}.npy"
+        np.save(char_embeds_path, char_embeds, allow_pickle=False)
+
+        wave_path = lib_dir+f"/temp/train_set/waves/{fileidx}.wav"
+        spec_path = lib_dir+f"/temp/train_set/temps/{fileidx}.spec.pt"
+        sp_emb_path = lib_dir+f"/temp/train_set/embed/{fileidx}.pt"
+        spec = get_spec(hps, wave_path)
+        torch.save(spec, spec_path)
+        plist=phone_items_str.split()
+        lan_emb = [1]*len(plist)
+        pi_str2=''
+        lan_str=''
+        for any,b in zip(plist,lan_emb):
+            pi_str2+=any+'_c '
+            lan_str+=str(b)+' '
+        pi_str2=pi_str2.strip()
+        lan_str=lan_str.strip()
+        stemp=f"{wave_path}|{spec_path}|{pi_str2}|{sp_emb_path}|{lan_str}|1"
+        scrips.append(stemp)
+    ftext.close()
+
+    fout = open(lib_dir+f'/temp/filelists/all.txt', 'w', encoding='utf-8')
+    for item in scrips:
+        print(item, file=fout)
+    fout.close()
+    fout = open(lib_dir+f'/temp/filelists/valid.txt', 'w', encoding='utf-8')
+    for item in scrips[:1]:
+        print(item, file=fout)
+    fout.close()
+    fout = open(lib_dir+f'/temp/filelists/train.txt', 'w', encoding='utf-8')
+    for item in scrips[:]:
+        print(item, file=fout)
+    fout.close()
+    os.makedirs(tdir+"/embed", exist_ok=True)
+    cwd =os.getcwd()
+    os.chdir(lib_dir+'/ecapa')
+    os.system('python evalECAPA.py --register')
+    os.chdir(cwd)
+
 
 if __name__ == "__main__":
     #===here make train_set from default dataset
@@ -215,6 +318,8 @@ if __name__ == "__main__":
         pre_vits(args.config)
     elif args.method =='vitsm_no_bert':
         pre_vitsm_no_bert(args.config)
+    elif args.method =='vitsm_josh':
+        pre_vitsm_josh(args.config)
     else:
         print('not supported method')
 
