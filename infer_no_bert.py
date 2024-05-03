@@ -334,20 +334,12 @@ def EN_phonemizer(text):
     import text as tx
     from text.phoneme_table import _punctuation as _punc
     temp = tx._clean_text(text, ["english_cleaners2"])
-    temp1=''
-    for any in temp:
-        if any in _punc[:-1]:
-            temp1+=' '+any+' '
-        else:
-            temp1+=any
-    abc = temp1.split()
+    abc = temp.split()
     t_str= ''
     for word in abc:
-        if word in _punc[:-1]:
-            t_str += 'sp_e '
-        else:
-            for sym in word:
-                t_str+=sym+' '
+        for sym in word:
+            t_str+=sym+' '
+        t_str+= 'sp_e '
     return t_str
 def handle_text(text):
     sen_tw = TW_sep(text)
@@ -425,14 +417,15 @@ if __name__ == '__main__':
     #a,b = aaa.infer('./hello.wav',text,1.0,[1],lid_list)
     #print(a,b)a
 
-    main_lang = 0
+    main_lang = 1
     t_text_list = ['k_t', 'am2_t', 'conn_t', 's_t', 'i7_t', 'l_t', 'ong2_t', 'ts_t', 'iok4_t', '^_t', 'u7_t', 'conn_t', 'ts_t', 'inn5_t', 'conn_t', 'conn_t', '^_t', 'e5_t', 'split_t']
     t_text=''
     for any in t_text_list:
         t_text+=any+' '
     #text=f"零件費用產生,|tw>{t_text}|tw>服務人員apple pie將另行報價,請問您iphone接受嗎?It was all too little, too late."
-    #text=f"零件費用產生Trump,服務人員hello kitty將另行報價,請問您遠東A棟B棟C棟接受嗎?"
-    text = 'If you can make it there, you can make it anywhere.'
+    text=f"零件費用產生Trump,服務人員hello kitty將另行報價,請問您遠東A棟B棟C棟接受嗎?"
+    #text = 'If you can make it there, you can make it anywhere.'
+    #text = 'Apple'
     print(text)
     #text2=TW_sep(text)
     #print(text2)
@@ -451,8 +444,9 @@ if __name__ == '__main__':
     print(len(lid_list))
     print(lid_list)
     emb_path ='./temp/train_set/embed/000209.pt'
-    aaa=vits_multilingual("cuda",'./temp/multilingual_emb/G_380000.pth',emb_path)    #model pace do not use yet
-    #aaa=vits_multilingual("cuda",'./temp/multilingual_josh/G_6000.pth',emb_path)    #model pace do not use yet
+    #emb_path ='./temp/backup2_train_set/embed/SSB11250084.pt'
+    #aaa=vits_multilingual("cuda",'./temp/multilingual_emb/G_380000.pth',emb_path)    #model pace do not use yet
+    aaa=vits_multilingual("cuda",'./temp/multilingual_josh/G_6000.pth',emb_path)    #model pace do not use yet
     a,b = aaa.infer('./hello.wav',textf,1.0,[main_lang],lid_list)
     print(a,b)
 
