@@ -34,7 +34,7 @@ parser.add_argument('--initial_model',  type=str,   default="./exps/exp/model/mo
 
 ## eval path
 parser.add_argument('--audio_path',  type=str,   default="./SSB0005/", help='your audio path')
-parser.add_argument('--spkid_path',  type=str,   default="./register/", help='speaker ID storage path')
+parser.add_argument('--emb_path',  type=str,   default="./register/", help='speaker ID storage path')
 
 ## Initialization
 warnings.simplefilter("ignore")
@@ -55,15 +55,14 @@ if args.register == True :
     #print(audio_lst)
     # audio path = audioPath + audio_lst[0 ~ n], where n is len(audio_lst)
     s.spk_register('speaker_emb.pt',spkID_lst, audio_lst, spkidPath = args.spkid_path, audioPath = '../temp/train_set/waves/')
+    command='mv ./register/speaker_emb.pt ../temp/train_set/'
+    os.system(command)
+    emb = torch.load("../temp/train_set/speaker_emb.pt")
+    sdir='../temp/train_set/embed/'
 
-command='mv ./register/speaker_emb.pt ../temp/train_set/'
-os.system(command)
-emb = torch.load("../temp/train_set/speaker_emb.pt")
-sdir='../temp/train_set/embed/'
-
-for any in emb:
-    print(any[:-4]+'.pt',emb[any][0].shape)
-    torch.save(emb[any][0],sdir+any[:-4]+'.pt')
+    for any in emb:
+        print(any[:-4]+'.pt',emb[any][0].shape)
+        torch.save(emb[any][0],sdir+any[:-4]+'.pt')
 
 #aaa = torch.load("./register/spkID.pth")
 #print(aaa)
@@ -71,8 +70,5 @@ for any in emb:
 
 
 if args.eval == True:
-    spkID_lst = ['Evan']
-    # audio_lst = ['id11251/XHCSVYEZvlM/00001.wav','id11251/XHCSVYEZvlM/00002.wav','id10002/0_laIeN-Q44/00001.wav']
-    similarity = audio_lst = ['id11251/XHCSVYEZvlM/00001.wav','id11251/XHCSVYEZvlM/00002.wav']
-    s.spk_eval(spkID_lst, audio_lst, spkidPath = args.spkid_path, audioPath = args.audio_path)
+    s.spk_trans(args.audio_path,args.emb_path)
 

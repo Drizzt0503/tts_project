@@ -309,9 +309,12 @@ def CH_EN_sep(text):
             index_list.append([uchar,0])
         else:
             index_list.append([uchar,100])
-    f_list = merge_same_lang(index_list)
-    f2_list = merge_diff_lang(f_list)
-    f3_list = merge_same_lang(f2_list)
+    if not index_list:
+        f3_list=[]
+    else:
+        f_list = merge_same_lang(index_list)
+        f2_list = merge_diff_lang(f_list)
+        f3_list = merge_same_lang(f2_list)
     return f3_list
 
 
@@ -330,6 +333,22 @@ def CH_phonemizer(text):
             t_str += 'sp_c '
     return t_str
 
+def TW_phonemizer(text):
+    from text.phoneme_table import tailao_dic
+    t_str=''
+    t_list=text.split(' ')
+    for any in t_list:
+        if any in """…,?!;:.'"()""":
+            t_str+='split_t '
+        elif any == '-':
+            t_str+='conn_t '
+        elif any == '--':
+            t_str+='conn_t conn_t '
+        elif any[:-1] in tailao_dic:
+            c,d = tailao_dic[any[:-1]]
+            t_str+=f'{c}_t {d}{any[-1]}_t '
+    return t_str
+
 def EN_phonemizer(text):
     import text as tx
     from text.phoneme_table import _punctuation as _punc
@@ -341,7 +360,7 @@ def EN_phonemizer(text):
             t_str+=sym+' '
         t_str+= 'sp_e '
     return t_str
-def handle_text(text):
+def handle_text(text,main_lang):
     sen_tw = TW_sep(text)
     sen_all=[]
     for any in sen_tw:
@@ -369,12 +388,31 @@ def handle_text(text):
                 lid_list.append(0)
             #print('2',text3)
         if any[1] == 2:
-            f_str += any[0]
-            a = any[0].split()
+            text4 = TW_phonemizer(any[0])
+            f_str += text4
+            a = text4.split()
             for i in range(len(a)):
                 lid_list.append(2)
+    if main_lang == 1:
+        f_str='sil_c '+f_str+'sil_c'
+        lid_list.insert(0,1)
+        lid_list.append(1)
+    if main_lang == 0:
+        f_str='sil_e '+f_str+'sil_e'
+        lid_list.insert(0,0)
+        lid_list.append(0)
+    if main_lang == 2:
+        f_str='sil_t '+f_str+'sil_t'
+        lid_list.insert(0,2)
+        lid_list.append(2)
     return f_str,lid_list
 
+def ecapa_emb(audio,emb):
+    cdir = os.path.dirname(os.path.realpath(__file__))
+    cwd = os.getcwd()
+    os.chdir(cdir+'/ecapa')
+    os.system(f"python evalECAPA.py --eval --audio_path {audio} --emb_path {emb}")
+    os.chdir(cwd)
 
 if __name__ == '__main__':
     #text="雷聲滾滾，閃電常明，山妖亦是戰戰兢兢，卻忍不住心中貪婪，時常躲在樹後，望向那座雷電風雨間的破廟。"
@@ -422,31 +460,27 @@ if __name__ == '__main__':
     t_text=''
     for any in t_text_list:
         t_text+=any+' '
-    #text=f"零件費用產生,|tw>{t_text}|tw>服務人員apple pie將另行報價,請問您iphone接受嗎?It was all too little, too late."
-    text=f"零件費用產生Trump,服務人員hello kitty將另行報價,請問您遠東A棟B棟C棟接受嗎?"
+    t_text="gu5 , le5 pe7 bo5 -- puann3 - hang7 e7"
+    text=f"零件費用產生,|tw>{t_text}|tw>服務人員apple pie將另行報價,請問您iphone接受嗎?It was all too little, too late."
+    #text=f"零件費用產生Trump,服務人員hello kitty將另行報價,請問您遠東A棟B棟C棟接受嗎?"
     #text = 'If you can make it there, you can make it anywhere.'
-    #text = 'Apple'
+    #text = "An apple a day, it keeps doctor away from home."
     print(text)
     #text2=TW_sep(text)
     #print(text2)
     #text3=what_lang(text)
     #print(text3)
-    textf,lid_list=handle_text(text)
-    if main_lang == 1:
-        textf='sil_c '+textf+'sil_c'
-        lid_list.insert(0,1)
-        lid_list.append(1)
-    if main_lang == 0:
-        textf='sil_e '+textf+'sil_e'
-        lid_list.insert(0,0)
-        lid_list.append(0)
+    textf,lid_list=handle_text(text,main_lang)
     print(textf)
     print(len(lid_list))
     print(lid_list)
-    emb_path ='./temp/train_set/embed/000209.pt'
-    #emb_path ='./temp/backup2_train_set/embed/SSB11250084.pt'
-    #aaa=vits_multilingual("cuda",'./temp/multilingual_emb/G_380000.pth',emb_path)    #model pace do not use yet
-    aaa=vits_multilingual("cuda",'./temp/multilingual_josh/G_6000.pth',emb_path)    #model pace do not use yet
+    m_path = './temp/multilingual_emb/G_500000.pth'
+    #emb_path ='./temp/train_set/embed/000209.pt'
+    #emb_path ='./temp/train_set/embed/p297_206.pt'
+    emb_path ='./temp/train_set/embed/SSB11250084.pt'
+    aaa=vits_multilingual("cuda",m_path,emb_path)    #model pace do not use yet
+    #aaa=vits_multilingual("cuda",'./temp/multilingual_emb_ENG/G_200000.pth',emb_path)    #model pace do not use yet
+    #aaa=vits_multilingual("cuda",'./temp/multilingual_josh/G_6000.pth',emb_path)    #model pace do not use yet
     a,b = aaa.infer('./hello.wav',textf,1.0,[main_lang],lid_list)
     print(a,b)
 

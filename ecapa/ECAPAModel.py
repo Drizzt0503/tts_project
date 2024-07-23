@@ -177,6 +177,42 @@ class ECAPAModel(nn.Module):
 		# 儲存
 		torch.save(embeddings, spkidPath+spk_name)
 
+	def spk_trans(self, audio_path, emb_path) :
+		self.eval()
+		# sound to embedding
+		audio, _  = soundfile.read(audio_path)
+		data_1 = torch.FloatTensor(numpy.stack([audio],axis=0)).cuda()
+
+		# Spliited utterance matrix vvvvv
+		max_audio = 300 * 160 + 240 # ~= 16k*3+240 = 3sec
+		if audio.shape[0] <= max_audio:
+			shortage = max_audio - audio.shape[0]
+			audio = numpy.pad(audio, (0, shortage), 'wrap')
+		feats = []
+		startframe = numpy.linspace(0, audio.shape[0]-max_audio, num=5)
+		for asf in startframe:
+			feats.append(audio[int(asf):int(asf)+max_audio])
+		feats = numpy.stack(feats, axis = 0).astype(float)
+		data_2 = torch.FloatTensor(feats).cuda()
+		# Spliited utterance matrix ^^^^^
+
+		print(data_1.shape)
+		# 多聲道檢查
+		if (len(data_1.shape) > 2) :
+			data_1 = data_1[:,:,1]
+		if (len(data_2.shape) > 2) :
+			data_2 = data_2[:,:,1]
+		print(data_1.shape)
+		# Speaker embeddings
+		with torch.no_grad():
+			embedding_1 = self.speaker_encoder.forward(data_1, aug = False)
+			embedding_1 = F.normalize(embedding_1, p=2, dim=1)
+			embedding_2 = self.speaker_encoder.forward(data_2, aug = False)
+			embedding_2 = F.normalize(embedding_2, p=2, dim=1)
+		# 儲存
+		print(emb_path)
+		torch.save(embedding_1, emb_path)
+
 	def spk_eval(self, spkIDs, files, spkidPath, audioPath) :
 		self.eval()
 

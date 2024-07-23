@@ -3,7 +3,7 @@
     "train_class": "vits_core.models.SynthesizerTrn_multilingual",
     "eval_class": "vits_core.models.SynthesizerTrn_multilingual",
     "log_interval": 20,
-    "eval_interval": 20000,
+    "eval_interval": 4000000,
     "seed": 1234,
     "epochs": 20000,
     "learning_rate": 1e-4,
