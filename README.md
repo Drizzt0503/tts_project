@@ -1,15 +1,21 @@
 # TTS Service
+這是一個基於VITS的中文text to speech(TTS)模型，附加一個bert模型來優化韻律的部分。
+就像原始VITS，支援多人語音，但另外引用Speaker Verification任務的Ecapa模型產生的
+speaker embedding，因此可以做zero shot的語音克隆。
 
-分兩部分，一是tts模型的推理調用，用import的形式。
-二是克隆語音所用來finetune模型的train_service.py檔。
+分兩部分，一是TTS模型的推理調用，用python import package的形式。
+二是用finetune模型方式來語音克隆的train_service.py檔。
 
 ### 安裝(ubuntu)
 
 
-1. 拉下預設docker image 並啟動
+1. 拉下預設docker image 並啟動(或任意支援GPU的python環境)
 
+(pytorch docker image https://catalog.ngc.nvidia.com/orgs/nvidia/containers/pytorch)
+
+example:
 ```
-sudo docker run --gpus all -it --name tts_test --shm-size 63G -v /data2/:/data2/ -v /var/www/html/webuploader/:/var/www/html/webuploader/ -v /mnt/share/AI_service/tts_service/:/mnt/share/ nvcr.io/nvidia/pytorch:23.10-py3
+sudo docker run --gpus all -it --name tts_test --shm-size 63G -v /data2/:/data2/ -v /var/www/html/webuploader/:/var/www/html/webuploader/ -v /mnt/share/AI_service/tts_project/:/mnt/share/ nvcr.io/nvidia/pytorch:23.10-py3
 ```
 
 2. git clone這個repo並
@@ -18,10 +24,10 @@ sudo docker run --gpus all -it --name tts_test --shm-size 63G -v /data2/:/data2/
 git clone https://gitlab.com/drizztmon/tts_project.git
 ```
 
-3. 進入tts_service的資料夾,執行install
+3. 進入tts_project的資料夾,執行install
 
 ```
-cd tts_service
+cd tts_project
 sh install.sh
 ```
 
@@ -49,32 +55,15 @@ pace: 語速，浮點數。(1.0是正常 0.8較快 1.2較慢)
 會return生成狀況{ 0, 'ok' }表示成功  
 {1, 'not in dic'}表示有文檔不再字典裡
 
-### TTS_infer待處理狀況
-
-1. 模型預設路徑是否要寫死
-2. 是否加上音量調整
-3. 文本正規化目前在Evan的code，應該補上對應method
-4. 回傳狀況的擴充
-5. readme補充模型路徑的描述
-
-
-### model path example:  
-Vits: 
-b99084aeaa1411eeaf7b0011328a21bb(*commnuity_id*)/122(*user_id*)/21.pth(*user_model_id*)
-
-VitsM:  
-b99084aeaa1411eeaf7b0011328a21bb/122/20.pth   
-b99084aeaa1411eeaf7b0011328a21bb/122/20_emb.pt
-
 
 
 
 ### sample code
 
 ```python
-import tts_service
-from tts_service.infer_service import TTS_Vits as vits
-from tts_service.infer_service import TTS_VitsM as vitsm
+import tts_project
+from tts_project.infer_service import TTS_Vits as vits
+from tts_project.infer_service import TTS_VitsM as vitsm
 
 if __name__ == '__main__':
     text="零件費用產生，服務人員將另行報價，請問您接受嗎?"
@@ -85,6 +74,9 @@ if __name__ == '__main__':
 
 
 ## TTS VoiceClone Training Service
+
+下面內容，因為要跟前端跟DB合作，所以定義了許多環境參數，如果只是要語音克隆，
+請忽略下面說明，finetune原本的推理模型就好。
 
 ### 主程式流程:
 
@@ -212,14 +204,6 @@ VitsM模型名字為{user_model_id}.pth加上speaker embedding:{user_model_id}_e
 
 本地(AI server)template示範語句path:  
 /home/yuhang/tts_dataset
-
-### 訓練服務待處理
-
-1. 目前model_type 1 for vits 2 for vitsm
-2. 可以停止訓練任務請求
-3. 回傳錯誤的狀態確認
-4. url現在在db,修改相對應的
-5. 寫log,不要print
 
 
 
